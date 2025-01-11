@@ -1,0 +1,2 @@
+googlemaps==4.10.0
+streamlit==1.32.2
