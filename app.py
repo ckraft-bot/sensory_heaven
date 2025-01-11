@@ -132,7 +132,13 @@ def display_map(location, places):
                     popup_text += f"<br><i>{user_name}: {review_text}</i>"
             
             # Create a marker on the map
-            folium.Marker([lat, lon], popup=popup_text).add_to(map_)
+            icon = folium.Icon(color="red", icon="info-sign")
+            folium.Marker(
+                [lat, lon], 
+                popup=popup_text,
+                icon=folium.Icon(color="red", icon="glyphicon-pushpin", prefix="glyphicon")  # Pin icon
+            ).add_to(map_)
+
         
         except KeyError as e:
             print(f"Error processing place: {e}")  # Log the error if something goes wrong
