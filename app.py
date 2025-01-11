@@ -12,42 +12,45 @@ def get_sensory_friendly_places(location, radius=1000):
         "Authorization": FOURSQUARE_API_KEY
     }
 
-    # List of sensory-related keywords
     sensory_keywords = [
-        "sensory", "sensory-friendly", "low", "dim", "quiet", 
-        "comfortable", "noise-cancelling", "accesible", "flexible seating", "comfortable seating", 
-        "flowers", "water feature", "wind chimes", "autism"
+        "accessible", "autism", "autism-friendly", "calming", "comfortable", 
+        "comfortable seating", "dim", "flowers", "low", "noise-cancelling", 
+        "peaceful", "quiet", "sensory", "water feature"
     ]
 
-    # Search for sensory-friendly places by combining sensory keywords
-    query = " OR ".join(sensory_keywords)  # Use OR to combine keywords in the query
+    query = " OR ".join(sensory_keywords)
     
     params = {
-        "ll": location,  # Latitude and longitude
-        "radius": radius,  # Radius around location
-        "query": query,  # Combined sensory keyword query
-        "limit": 10  # Number of results to fetch
+        "ll": location,
+        "radius": radius,
+        "query": query,
+        "limit": 10
     }
 
-    # Make the request to get places
     response = requests.get(FOURSQUARE_API_URL_SEARCH, headers=headers, params=params)
+    
+    print("Request URL:", response.url)  # Print the full request URL for debugging
+
     if response.status_code != 200:
         st.error(f"Error: {response.status_code}")
+        print("Error details:", response.json())  # Print the error details
         return []
     
     places_data = response.json()
+    print("API Response:", places_data)
+    
     places = places_data.get("results", [])
 
-    # Now get photos and reviews for each place
     for place in places:
-        place_id = place.get("fsq_id")  # Extract the place ID safely
+        place_id = place.get("fsq_id")
         if place_id:
             photo_url = get_place_photos(place_id)
-            place["photo_url"] = photo_url  # Add photo URL to place data
+            place["photo_url"] = photo_url
             reviews = get_place_reviews(place_id)
-            place["reviews"] = reviews  # Add reviews to place data
+            place["reviews"] = reviews
 
     return places
+
 
 # Function to get photos for a specific place using its fsq_id
 def get_place_photos(place_id):
@@ -149,9 +152,8 @@ def geocode_location(location_name):
 st.title("Sensory-Friendly Places Finder")
 st.write("Find sensory-friendly places near you!")
 
-# Convert the slider value from miles to meters
-miles = st.slider("Radius (miles):", 1.0, 10.0, 1.0)  # Slider in miles
-radius_in_meters = miles * 1609.34  # Convert miles to meters
+# User input for radius in meters
+radius_in_meters = st.number_input("Enter radius (in meters):", min_value=1, value=1000, step=100)
 
 # User inputs for location
 location_name = st.text_input("Enter a location (city or address):", "New York")
