@@ -6,7 +6,7 @@ from config import *  # Assuming FOURSQUARE_API_KEY and URL are stored in config
 from geopy.geocoders import Nominatim  # For geocoding location
 
 # Function to get sensory-friendly places from Foursquare API
-def get_sensory_friendly_places(location, radius=500):
+def get_sensory_friendly_places(location, radius=1000):
     headers = {
         "Accept": "application/json",
         "Authorization": FOURSQUARE_API_KEY
@@ -14,10 +14,9 @@ def get_sensory_friendly_places(location, radius=500):
 
     # List of sensory-related keywords
     sensory_keywords = [
-        "sensory", "sensory-friendly", "low", "dim", "calming", "quiet", "soft", "comfortable",
-        "noise-cancelling", "calming colors", "peaceful", "comfortable seating",
-        "obstacle course", "mini trampoline", "swing", "balance board", "sensory bin",
-        "weighted blanket", "sensory garden", "flowers", "herbs", "water feature", "wind chimes"
+        "sensory", "sensory-friendly", "low", "dim", "quiet", 
+        "comfortable", "noise-cancelling", "accesible", "flexible seating", "comfortable seating", 
+        "flowers", "water feature", "wind chimes", "autism"
     ]
 
     # Search for sensory-friendly places by combining sensory keywords
@@ -151,7 +150,7 @@ st.title("Sensory-Friendly Places Finder")
 st.write("Find sensory-friendly places near you!")
 
 # Convert the slider value from miles to meters
-miles = st.slider("Radius (miles):", 1.0, 10.0, 1.0)  # Slider in miles (range 1 to 10 miles)
+miles = st.slider("Radius (miles):", 1.0, 10.0, 1.0)  # Slider in miles
 radius_in_meters = miles * 1609.34  # Convert miles to meters
 
 # User inputs for location
