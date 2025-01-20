@@ -1,194 +1,158 @@
 import streamlit as st
-import folium  # For drawing maps
+import folium  # for drawing maps
+from folium import folium_static
 import requests
-import config
-from config import *  # Assuming FOURSQUARE_API_KEY and URL are stored in config.py
-from geopy.geocoders import Nominatim  # For geocoding location
+from config import *  
+from geopy.geocoders import Nominatim  # for geocoding location
 
 # Function to get sensory-friendly places from Foursquare API
-def get_sensory_friendly_places(location, radius=1000):
+def get_sensory_friendly_restaurants(location, radius=1000):
     headers = {
         "Accept": "application/json",
         "Authorization": FOURSQUARE_API_KEY
     }
 
     sensory_keywords = [
-        "accessible", "autism", "autism-friendly", "calming", "comfortable", 
-        "comfortable seating", "dim", "flowers", "low", "noise-cancelling", 
-        "peaceful", "quiet", "sensory", "water feature"
+        "accessible", 
+        "autism", 
+        "autism-friendly", 
+        "cozy",  
+        "dim", 
+        "flowers", 
+        "low", 
+        "noise-cancelling", 
+        "peaceful", 
+        "quiet", 
+        "sensory"
     ]
-
+    
     query = " OR ".join(sensory_keywords)
     
     params = {
         "ll": location,
         "radius": radius,
         "query": query,
-        "limit": 10
+        "limit": 5
     }
 
     response = requests.get(FOURSQUARE_API_URL_SEARCH, headers=headers, params=params)
     
-    print("Request URL:", response.url)  # Print the full request URL for debugging
-
     if response.status_code != 200:
         st.error(f"Error: {response.status_code}")
-        print("Error details:", response.json())  # Print the error details
         return []
-    
+
     places_data = response.json()
-    print("API Response:", places_data)
-    
     places = places_data.get("results", [])
 
     for place in places:
         place_id = place.get("fsq_id")
         if place_id:
-            photo_url = get_place_photos(place_id)
-            place["photo_url"] = photo_url
+            photo_urls = get_place_photos(place_id)
+            place["photo_urls"] = photo_urls
             reviews = get_place_reviews(place_id)
             place["reviews"] = reviews
 
     return places
 
 
-# Function to get photos for a specific place using its fsq_id
+# Function to get photos for a specific place
 def get_place_photos(place_id):
     headers = {
         "Accept": "application/json",
         "Authorization": FOURSQUARE_API_KEY
     }
 
-    # Request photos for the place
-    params = {
-        "limit": 1  # You can adjust how many photos you want
-    }
-    
-    response = requests.get(f"{FOURSQUARE_API_URL_PHOTOS}/{place_id}/photos", headers=headers, params=params)
+    url = FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id)
+    response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
         photos_data = response.json()
-        if photos_data["results"]:
-            # Return the first photo URL (you can select other sizes too)
-            return photos_data["results"][0]["prefix"] + "500x500" + photos_data["results"][0]["suffix"]
-    return None  # If no photos found
+        return [
+            photo["prefix"] + "300x300" + photo["suffix"]
+            for photo in photos_data
+        ]
+    return None
 
-# Function to get reviews for a specific place using its fsq_id
+
+# Function to get reviews for a specific place
 def get_place_reviews(place_id):
     headers = {
         "Accept": "application/json",
         "Authorization": FOURSQUARE_API_KEY
     }
-    
-    # Request reviews for the place
-    response = requests.get(f"{FOURSQUARE_API_URL_REVIEWS.format(place_id)}", headers=headers)
+
+    url = FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id)
+    response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
         reviews_data = response.json()
-        reviews = reviews_data.get("response", {}).get("reviews", [])
-        return reviews
-    return []  # If no reviews found
+        return [
+            {
+                "user": tip.get("user", {}).get("firstName", "Anonymous"),
+                "text": tip.get("text", "")
+            }
+            for tip in reviews_data
+        ]
+    return []
 
-# Function to display the map
-def display_map(location, places):
-    # Create a Folium map centered at the user's location
-    map_ = folium.Map(location=location, zoom_start=14)
-    
-    # Add markers for each place
-    for place in places:
-        try:
-            name = place.get("name", "Unnamed place")
-            lat = None
-            lon = None
 
-            # Try to access geocodes and coordinates
-            if "geocodes" in place and "main" in place["geocodes"]:
-                lat = place["geocodes"]["main"].get("lat", None)
-                lon = place["geocodes"]["main"].get("lng", None)
-
-            # If geocodes are not available, fall back to location coordinates
-            if not lat or not lon:
-                if "location" in place:
-                    lat = place["location"].get("lat", None)
-                    lon = place["location"].get("lng", None)
-
-            # If no valid latitude and longitude, skip this place
-            if not lat or not lon:
-                continue
-
-            address = place.get("location", {}).get("address", "No address")
-            rating = place.get("rating", "No rating")
-            photo_url = place.get("photo_url", None)
-            reviews = place.get("reviews", [])
-
-            # Popup info
-            popup_text = f"<b>{name}</b><br>{address}<br>Rating: {rating}<br>"
-            if photo_url:
-                popup_text += f"<img src='{photo_url}' width='100' height='100'/><br>"
-            
-            # Add reviews to the popup
-            if reviews:
-                for review in reviews:
-                    user_name = review.get("user", {}).get("firstName", "Anonymous")
-                    review_text = review.get("text", "No review text")
-                    popup_text += f"<br><i>{user_name}: {review_text}</i>"
-            
-            # Create a marker on the map
-            icon = folium.Icon(color="red", icon="info-sign")
-            folium.Marker(
-                [lat, lon], 
-                popup=popup_text,
-                icon=folium.Icon(color="red", icon="glyphicon-pushpin", prefix="glyphicon")  # Pin icon
-            ).add_to(map_)
-
-        
-        except KeyError as e:
-            print(f"Error processing place: {e}")  # Log the error if something goes wrong
-    
-    # Return the map object
-    return map_
-
-# Geocoding function to convert location name to lat/lon
-def geocode_location(location_name):
-    geolocator = Nominatim(user_agent="sensory_friendly_app")
-    location = geolocator.geocode(location_name)
-    if location:
-        return location.latitude, location.longitude
-    return None, None
-
-# Streamlit app UI
+# Streamlit app layout
 st.title("Sensory-Friendly Places Finder")
-st.write("Find sensory-friendly places near you!")
+st.write("Discover sensory-friendly locations near you with photos and reviews.")
 
-# User input for radius in meters
-radius_in_meters = st.number_input("Enter radius (in meters):", min_value=1, value=1000, step=100)
+# User inputs
+location_input = st.text_input("Enter a location (city, address, or coordinates):", "New York, NY")
+radius_input = st.slider("Search radius (meters):", min_value=100, max_value=5000, value=1000, step=100)
 
-# User inputs for location
-location_name = st.text_input("Enter a location (city or address):", "New York")
+if location_input:
+    geolocator = Nominatim(user_agent="streamlit_app")
+    location = geolocator.geocode(location_input)
+    if location:
+        coordinates = f"{location.latitude},{location.longitude}"
+        st.write(f"Coordinates for {location_input}: {coordinates}")
 
-# Fetch places based on the location entered
-if location_name:
-    lat, lon = geocode_location(location_name)
-    if lat and lon:
-        location = f"{lat},{lon}"
-        places = get_sensory_friendly_places(location, radius=radius_in_meters)
+        # Get sensory-friendly places
+        places = get_sensory_friendly_restaurants(coordinates, radius=radius_input)
 
-        # Display the map with places
-        map_ = display_map([lat, lon], places)
-        st.components.v1.html(map_._repr_html_(), height=500)
+        if places:
+            # Display places on a map
+            map_center = [location.latitude, location.longitude]
+            map_object = folium.Map(location=map_center, zoom_start=15)
 
-        # Show details of the places
-        st.write(f"Found {len(places)} sensory-friendly places nearby.")
-        for place in places:
-            name = place.get("name")
-            address = place.get("location", {}).get("address", "No address")
-            rating = place.get("rating", "No rating")
-            st.write(f"{name} - {address} - Rating: {rating}")
-            
-            # Display reviews
-            reviews = place.get("reviews", [])
-            if reviews:
-                for review in reviews:
-                    user_name = review.get("user", {}).get("firstName", "Anonymous")
-                    review_text = review.get("text", "No review text")
-                    st.write(f"Review by {user_name}: {review_text}")
+            for place in places:
+                name = place.get("name", "Unknown Place")
+                address = place.get("location", {}).get("address", "Address not available")
+                latitude = place.get("geocodes", {}).get("main", {}).get("latitude")
+                longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
+                photo_urls = place.get("photo_urls", [])
+                reviews = place.get("reviews", [])
+
+                # Add marker to the map
+                if latitude and longitude:
+                    popup_content = f"<b>{name}</b><br>{address}"
+                    folium.Marker([latitude, longitude], popup=popup_content).add_to(map_object)
+
+                # Display place details in Streamlit
+                st.subheader(name)
+                st.write(f"Address: {address}")
+
+                # Display photos
+                if photo_urls:
+                    st.image(photo_urls[0], caption=name, width=300)
+                else:
+                    st.write("No photos available.")
+
+                # Display reviews
+                if reviews:
+                    st.write("Reviews:")
+                    for review in reviews:
+                        st.write(f"- {review['user']}: {review['text']}")
+                else:
+                    st.write("No reviews available.")
+
+            # Render map using folium_static
+            folium_static(map_object)
+        else:
+            st.write("No sensory-friendly places found in the specified radius.")
     else:
-        st.error("Location not found.")
+        st.error("Unable to geocode the location. Please try again.")
