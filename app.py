@@ -15,11 +15,15 @@ def get_sensory_friendly_restaurants(location, radius=1000):
 
     sensory_keywords = [
         "accessibility", 
+        "accessible",
         "autism", 
         "cozy",  
         "dim", 
         "peaceful", 
         "quiet", 
+        "booths",
+        "plant",
+        "flower"
     ]
     
     query = " OR ".join(sensory_keywords)
