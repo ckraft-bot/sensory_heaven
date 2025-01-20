@@ -1,6 +1,7 @@
 import streamlit as st
-import folium  # for drawing maps
-from folium import folium_static
+import folium
+from folium import Icon
+from streamlit_folium import folium_static
 import requests
 from config import *  
 from geopy.geocoders import Nominatim  # for geocoding location
@@ -95,29 +96,28 @@ def get_place_reviews(place_id):
         ]
     return []
 
+st.title("Sensory Heaaven")
+st.write("Discover some potential sensory-friendly locations near you.")
 
-# Streamlit app layout
-st.title("Sensory-Friendly Places Finder")
-st.write("Discover sensory-friendly locations near you with photos and reviews.")
-
-# User inputs
-location_input = st.text_input("Enter a location (city, address, or coordinates):", "New York, NY")
+location_input = st.text_input("Enter a location (city, address, or coordinates):", "London")
 radius_input = st.slider("Search radius (meters):", min_value=100, max_value=5000, value=1000, step=100)
 
+# geocodes a user-inputted location
+# retrieves sensory-friendly places nearby
+# and displays them on an interactive map with details such as name, address, photos, and reviews
 if location_input:
     geolocator = Nominatim(user_agent="streamlit_app")
     location = geolocator.geocode(location_input)
     if location:
-        coordinates = f"{location.latitude},{location.longitude}"
+        coordinates = [location.latitude, location.longitude]
         st.write(f"Coordinates for {location_input}: {coordinates}")
 
         # Get sensory-friendly places
-        places = get_sensory_friendly_restaurants(coordinates, radius=radius_input)
+        places = get_sensory_friendly_restaurants(f"{location.latitude},{location.longitude}", radius=radius_input)
 
         if places:
-            # Display places on a map
-            map_center = [location.latitude, location.longitude]
-            map_object = folium.Map(location=map_center, zoom_start=15)
+            # Create map centered on the location
+            m = folium.Map(location=coordinates, zoom_start=15)
 
             for place in places:
                 name = place.get("name", "Unknown Place")
@@ -129,8 +129,12 @@ if location_input:
 
                 # Add marker to the map
                 if latitude and longitude:
+                    # Define the custom icon with a fork and knife (utensils) icon
+                    eating_icon = Icon(icon="cutlery", icon_color="white", color="green", prefix="fa")  # 'fa' for Font Awesome
+
                     popup_content = f"<b>{name}</b><br>{address}"
-                    folium.Marker([latitude, longitude], popup=popup_content).add_to(map_object)
+                    folium.Marker([latitude, longitude], popup=popup_content, icon=eating_icon).add_to(m)
+
 
                 # Display place details in Streamlit
                 st.subheader(name)
@@ -150,8 +154,9 @@ if location_input:
                 else:
                     st.write("No reviews available.")
 
-            # Render map using folium_static
-            folium_static(map_object)
+            # Render map using st_folium
+            from streamlit_folium import st_folium
+            st_folium(m, width=800, height=500)
         else:
             st.write("No sensory-friendly places found in the specified radius.")
     else:
