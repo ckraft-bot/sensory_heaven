@@ -1,12 +1,12 @@
 import streamlit as st
 import folium
 from folium import Icon
-from streamlit_folium import folium_static
+from streamlit_folium import st_folium
 import requests
 from config import *  
 from geopy.geocoders import Nominatim  # for geocoding location
 
-# Function to get sensory-friendly places from Foursquare API
+# Function to get sensory-friendly restaurants from Foursquare API
 def get_sensory_friendly_restaurants(location, radius=1000):
     headers = {
         "Accept": "application/json",
@@ -14,17 +14,12 @@ def get_sensory_friendly_restaurants(location, radius=1000):
     }
 
     sensory_keywords = [
-        "accessible", 
+        "accessibility", 
         "autism", 
-        "autism-friendly", 
         "cozy",  
         "dim", 
-        "flowers", 
-        "low", 
-        "noise-cancelling", 
         "peaceful", 
         "quiet", 
-        "sensory"
     ]
     
     query = " OR ".join(sensory_keywords)
@@ -33,7 +28,9 @@ def get_sensory_friendly_restaurants(location, radius=1000):
         "ll": location,
         "radius": radius,
         "query": query,
-        "limit": 5
+        "limit": 10,
+        # Foursquare category IDs: https://docs.foursquare.com/data-products/docs/categories
+        "categoryId": "56aa371be4b08b9a8d573550,"  # 63be6904847c3692a84b9bb5 = Food and Beverage Services
     }
 
     response = requests.get(FOURSQUARE_API_URL_SEARCH, headers=headers, params=params)
@@ -96,10 +93,13 @@ def get_place_reviews(place_id):
         ]
     return []
 
-st.title("Sensory Heaaven")
-st.write("Discover some potential sensory-friendly locations near you.")
 
-location_input = st.text_input("Enter a location (city, address, or coordinates):", "London")
+# Streamlit app layout and content
+st.title("Sensory Heaven")
+st.write("Discover sensory-friendly restaurants near you.")
+
+# Add a map to the top of the page
+location_input = st.text_input("Enter a location (city, address, or coordinates):", "Stockholm")
 radius_input = st.slider("Search radius (meters):", min_value=100, max_value=5000, value=1000, step=100)
 
 # geocodes a user-inputted location
@@ -112,7 +112,7 @@ if location_input:
         coordinates = [location.latitude, location.longitude]
         st.write(f"Coordinates for {location_input}: {coordinates}")
 
-        # Get sensory-friendly places
+        # Get sensory-friendly places (restaurants only)
         places = get_sensory_friendly_restaurants(f"{location.latitude},{location.longitude}", radius=radius_input)
 
         if places:
@@ -130,11 +130,10 @@ if location_input:
                 # Add marker to the map
                 if latitude and longitude:
                     # Define the custom icon with a fork and knife (utensils) icon
-                    eating_icon = Icon(icon="cutlery", icon_color="white", color="green", prefix="fa")  # 'fa' for Font Awesome
+                    eating_icon = Icon(icon="cutlery", icon_color="white", color="green", prefix="fa") # fa = https://fontawesome.com/
 
                     popup_content = f"<b>{name}</b><br>{address}"
                     folium.Marker([latitude, longitude], popup=popup_content, icon=eating_icon).add_to(m)
-
 
                 # Display place details in Streamlit
                 st.subheader(name)
@@ -144,7 +143,7 @@ if location_input:
                 if photo_urls:
                     st.image(photo_urls[0], caption=name, width=300)
                 else:
-                    st.write("No photos available.")
+                    st.write("No photos :camera_with_flash: available.")
 
                 # Display reviews
                 if reviews:
@@ -152,12 +151,11 @@ if location_input:
                     for review in reviews:
                         st.write(f"- {review['user']}: {review['text']}")
                 else:
-                    st.write("No reviews available.")
+                    st.write("No reviews :left_speech_bubble: available.")
 
             # Render map using st_folium
-            from streamlit_folium import st_folium
             st_folium(m, width=800, height=500)
         else:
-            st.write("No sensory-friendly places found in the specified radius.")
+            st.write("No sensory-friendly restaurants found in the specified radius.")
     else:
         st.error("Unable to geocode the location. Please try again.")
