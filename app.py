@@ -31,7 +31,7 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
     }
     sensory_keywords = [
         "accessibility", "accessible", "autism", "cozy", "dim", "peaceful",
-        "quiet", "booths", "plant", "flower"
+        "quiet", "booths", "plant", "flower", "low-lighting"
     ]
     params = {
         "ll": location,
@@ -44,6 +44,57 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
 
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
+
+# maybe on another tab?
+def get_accessible_places(location, radius=1000, category_id=None):
+    """
+    Fetches accessible places from the Foursquare API using specific accessibility tags and categories.
+    
+    Args:
+        location (str): The latitude and longitude of the location, formatted as "lat,lng".
+        radius (int): Search radius in meters (default is 1000).
+        category_id (str, optional): The ID of a specific category to filter by.
+
+    Returns:
+        list: A list of accessible places matching the query.
+    """
+    headers = {
+        "Accept": "application/json",
+        "Authorization": FOURSQUARE_API_KEY
+    }
+
+    # Accessibility-related tags and categories
+    accessibility_keywords = [
+        "accessible", 
+        "wheelchair accessible", 
+        "family-friendly", 
+        "ramps", 
+        "accessible parking", 
+        "accessible toilets", 
+    ]
+
+    # Build the query using OR to include multiple keywords
+    params = {
+        "ll": location,
+        "radius": radius,
+        "query": " OR ".join(accessibility_keywords),
+        "limit": 10,  # Limit the results for performance
+    }
+
+    # Add categoryId if provided (e.g., specific business categories)
+    if category_id:
+        params["categoryId"] = category_id
+
+    # Fetch data from the Foursquare API
+    response = requests.get(FOURSQUARE_API_URL_SEARCH, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("results", [])  # Return the results
+    else:
+        # Handle errors and return an empty list if the request fails
+        st.error(f"Error fetching accessible places: {response.status_code}")
+        return []
 
 def get_place_photos(place_id):
     headers = {
