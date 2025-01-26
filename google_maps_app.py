@@ -54,9 +54,13 @@ def get_sensory_friendly_places(location, radius=1000):
     return []
 
 def get_place_details(place_id):
-    """Fetch place details using Google Maps API."""
+    """Fetch place details using Google Maps API, including rating, user ratings, opening hours, URL, and accessibility information."""
     url = GOOGLE_MAPS_API_PLACES_DETAILS
-    params = {"place_id": place_id, "fields": "name,formatted_address,photo,review", "key": GOOGLE_MAPS_API_KEY}
+    params = {
+        "place_id": place_id,
+        "fields": "name,formatted_address,photo,review,rating,user_ratings_total,opening_hours,url,types", 
+        "key": GOOGLE_MAPS_API_KEY
+    }
     data = fetch_data(url, headers=None, params=params)
     return data.get("result", {}) if data else {}
 
@@ -85,7 +89,7 @@ def display_place_info(name, address, photos, reviews):
     if reviews:
         with st.expander("Reviews", expanded=False):
             for review in reviews:
-                st.write(f"- Anonymous: {review['text']}")
+                st.write(f"{review['text']}")
     else:
         st.write("No reviews :speech_balloon: available.")
 
@@ -118,26 +122,45 @@ def main():
                     place_id = place.get("place_id")
 
                     # Fetch details like photos and reviews using the place_id
-                    details = get_place_details(place_id)
-                    photo_reference = details.get("photos", [{}])[0].get("photo_reference")
-                    photo_url = get_place_photos(photo_reference)
-                    reviews = details.get("reviews", [])
+                    place_details = get_place_details(place_id)
 
-                    if latitude and longitude:
-                        popup_content = f"<b>{name}</b><br>{address}"
-                        folium.Marker(
-                            [latitude, longitude],
-                            popup=popup_content,
-                            icon=Icon(icon="info-sign", prefix="fa", color="blue")
-                        ).add_to(m)
+                    # Rating and total reviews
+                    rating = place_details.get("rating", "No rating available")
+                    user_ratings_total = place_details.get("user_ratings_total", 0)
 
-                    display_place_info(name, address, [photo_url], reviews)
+                    # Fetch the photo
+                    photo_reference = place_details.get("photos", [{}])[0].get("photo_reference")
+                    photo_url = get_place_photos(photo_reference) if photo_reference else None
 
-                st_folium(m, width=800, height=500)
-            else:
-                st.write("No sensory-friendly places found in the specified radius.")
-        else:
-            st.error("Unable to geocode the location. Please try again.")
+                    # Reviews
+                    reviews = place_details.get("reviews", [])
+
+                    # Opening hours (if available)
+                    opening_hours = place_details.get("opening_hours", {}).get("weekday_text", [])
+
+                    # URL to the Google Maps page of the place
+                    url = place_details.get("url", "No URL available")
+
+                    # Check for accessibility-related keywords in types or reviews
+                    types = place_details.get("types", [])
+                    accessibility_keywords = [
+                        "wheelchair", 
+                        "accessible", 
+                        "ramp", 
+                        "accessible parking",
+                        "family bathroom", 
+                        "elevator", 
+                        "lift"
+                    ]
+                    accessible = any(keyword in " ".join(types) for keyword in accessibility_keywords)
+
+                    # Displaying the restaurant information
+                    st.write(f"### {name}")
+                    st.write(f"**Address**: {address}")
+                    if photo_url:
+                        st.image(photo_url, caption=f"Photo of {name}", use_container_width=True)
+
+
 
 if __name__ == "__main__":
     main()
