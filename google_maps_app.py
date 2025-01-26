@@ -147,26 +147,32 @@ def main():
                     url = place_details.get("url", "No URL available")
 
                     # Accessibility-related keywords
-                    accessibility_keywords = [
-                        "wheelchair accessible parking lot", 
-                        "wheelchair accessible seating", 
-                        "wheelchair accessible restroom", 
-                        "wheelchair accessible entrance",
-                        "elevator", 
-                        "lift"
-                    ]
-                    types = place_details.get("types", [])
-                    accessible = any(keyword.lower() in " ".join(types).lower() for keyword in accessibility_keywords)
+                    # accessibility_keywords = [
+                    #     "wheelchair accessible parking lot", 
+                    #     "wheelchair accessible seating", 
+                    #     "wheelchair accessible restroom", 
+                    #     "wheelchair accessible entrance",
+                    #     "elevator", 
+                    #     "lift"
+                    # ]
+                    # types = place_details.get("types", [])
+                    # accessible = any(keyword.lower() in " ".join(types).lower() for keyword in accessibility_keywords)
 
                     # Displaying the restaurant high level information
                     st.write(f"### {name}")
-                    st.write(f"**Address**: {address}")
+                    #st.write(f"**Address**: {address} [take me to Google Maps]({url})")
+                    st.write(f"**[{address}]({url})**")
+
                     if photo_url:
                         st.image(photo_url, caption=f"Photo of {name}", use_container_width=True)
 
-                    # Google Maps URL (collapsible)
-                    with st.expander("Take me to Google Maps"):
-                        st.write(f"[Link to Google Maps]({url})")
+                    # Opening Hours (collapsible)
+                    if opening_hours:
+                        with st.expander("Opening Hours"):
+                            for day in opening_hours:
+                                st.write(day)
+                    else:
+                        st.write("No opening hours available.")
 
                     # Rating & Review Count (collapsible)
                     with st.expander("Rating & Reviews"):
@@ -178,19 +184,13 @@ def main():
                         else:
                             st.write("No reviews available :speech_balloon:")
 
-                    # Opening Hours (collapsible)
-                    if opening_hours:
-                        with st.expander("Opening Hours"):
-                            for day in opening_hours:
-                                st.write(day)
-                    else:
-                        st.write("No opening hours available.")
+
 
                     # Displaying accessibility information
-                    if accessible:
-                        st.write("This place is accessible.")
-                    else:
-                        st.write("No explicit accessibility information found.")
+                    # if accessible:
+                    #     st.write("This place is accessible.")
+                    # else:
+                    #     st.write("No explicit accessibility information found.")
 
                     # Map Marker
                     if latitude and longitude:
