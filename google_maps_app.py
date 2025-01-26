@@ -27,7 +27,7 @@ def geocode_location(location_input):
     return None
 
 def get_sensory_friendly_places(location, radius=1000):
-    """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants and limited to 10 results."""
+    """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants, bars, cafes, and coffee shops."""
     url = GOOGLE_MAPS_API_NEARBY
     sensory_keywords = [
         "autism", 
@@ -40,11 +40,15 @@ def get_sensory_friendly_places(location, radius=1000):
         "flower", 
         "low-lighting"
     ]
+    
+    # Expanding the scope to include restaurants, bars, cafes, and coffee shops
+    place_types = "restaurant|bar|cafe|coffee_shop"  # Comma-separated list for multiple types
+    
     params = {
         "location": f"{location[0]},{location[1]}",
         "radius": radius,
         "keyword": " OR ".join(sensory_keywords),
-        "type": "restaurant",  # Filters to show only restaurants
+        "type": place_types,  # Updated to include more types
         "key": GOOGLE_MAPS_API_KEY,
     }
     
@@ -52,6 +56,7 @@ def get_sensory_friendly_places(location, radius=1000):
     if data and data.get("results"):
         return data["results"][:10]  # Limit to 10 results
     return []
+
 
 def get_place_details(place_id):
     """Fetch place details using Google Maps API, including rating, user ratings, opening hours, URL, and accessibility information."""
@@ -141,26 +146,65 @@ def main():
                     # URL to the Google Maps page of the place
                     url = place_details.get("url", "No URL available")
 
-                    # Check for accessibility-related keywords in types or reviews
-                    types = place_details.get("types", [])
+                    # Accessibility-related keywords
                     accessibility_keywords = [
-                        "wheelchair", 
-                        "accessible", 
-                        "ramp", 
-                        "accessible parking",
-                        "family bathroom", 
+                        "wheelchair accessible parking lot", 
+                        "wheelchair accessible seating", 
+                        "wheelchair accessible restroom", 
+                        "wheelchair accessible entrance",
                         "elevator", 
                         "lift"
                     ]
-                    accessible = any(keyword in " ".join(types) for keyword in accessibility_keywords)
+                    types = place_details.get("types", [])
+                    accessible = any(keyword.lower() in " ".join(types).lower() for keyword in accessibility_keywords)
 
-                    # Displaying the restaurant information
+                    # Displaying the restaurant high level information
                     st.write(f"### {name}")
                     st.write(f"**Address**: {address}")
                     if photo_url:
                         st.image(photo_url, caption=f"Photo of {name}", use_container_width=True)
 
+                    # Google Maps URL (collapsible)
+                    with st.expander("Take me to Google Maps"):
+                        st.write(f"[Link to Google Maps]({url})")
 
+                    # Rating & Review Count (collapsible)
+                    with st.expander("Rating & Reviews"):
+                        st.write(f"Rating: {rating}")
+                        st.write(f"Review Count: {user_ratings_total}")
+                        if reviews:
+                            for review in reviews:
+                                st.write(f"{review['text']}")
+                        else:
+                            st.write("No reviews available :speech_balloon:")
 
+                    # Opening Hours (collapsible)
+                    if opening_hours:
+                        with st.expander("Opening Hours"):
+                            for day in opening_hours:
+                                st.write(day)
+                    else:
+                        st.write("No opening hours available.")
+
+                    # Displaying accessibility information
+                    if accessible:
+                        st.write("This place is accessible.")
+                    else:
+                        st.write("No explicit accessibility information found.")
+
+                    # Map Marker
+                    if latitude and longitude:
+                        popup_content = f"<b>{name}</b><br>{address}"
+                        folium.Marker(
+                            [latitude, longitude],
+                            popup=popup_content,
+                            icon=Icon(icon="cutlery", prefix="fa", color="green")
+                        ).add_to(m)
+
+                st_folium(m, width=800, height=500)
+            else:
+                st.write("No sensory-friendly places found in the specified radius.")
+        else:
+            st.error("Unable to geocode the location. Please try again.")
 if __name__ == "__main__":
     main()
