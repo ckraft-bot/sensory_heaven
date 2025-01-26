@@ -28,55 +28,36 @@ def geocode_location(location_input):
 
 
 def get_sensory_friendly_places(location, radius=1000):
-    """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants, bars, cafes, and coffee shops."""
+    """Fetch sensory-friendly places using Google Places Nearby Search API."""
     url = GOOGLE_MAPS_API_NEARBY
-    
-    # too specific
-    # sensory_keywords = [
-    #     "autism", 
-    #     "cozy",  
-    #     "peaceful",
-    #     "booth",  
-    #     "quiet", 
-    #     "headphone",
-    #     "low volume",
-    #     "volume low",
-    #     "low-lighting",
-    #     "dim",
-    #     "dimmed lighting",
-    #     "sensory friendly",
-    #     "sensory-friendly",
-    #     "sensory",
-    #     "sensory processing needs",
-    #     "fidget",
-    #     "asl",
-    # ]
     
     sensory_keywords = [
         "autism", 
-        "cozy", 
-        "dim", 
+        "cozy",  
         "peaceful",
+        "booth",  
         "quiet", 
-        "booth", 
-        "plant", 
-        "flower", 
+        "headphone",
+        "low volume",
+        "volume low",
         "low-lighting",
-        "ambiance"
+        "dim",
+        "dimmed lighting",
+        "sensory friendly",
+        "sensory-friendly",
+        "sensory",
+        "sensory processing needs",
+        "fidget",
+        "asl",
     ]
-
+    
     # Standardize keywords to uppercase
     standardized_keywords = [keyword.upper() for keyword in sensory_keywords]
-    
-    # Expanding the scope to include restaurants, bars, cafes, and coffee shops
-    place_types = "restaurant|bar|cafe|coffee_shop"
     
     params = {
         "location": f"{location[0]},{location[1]}",
         "radius": radius,
         "keyword": " OR ".join(standardized_keywords),
-        # "keyword": " OR ".join(sensory_keywords),
-        "type": place_types,
         "key": GOOGLE_MAPS_API_KEY,
     }
     
@@ -84,6 +65,7 @@ def get_sensory_friendly_places(location, radius=1000):
     if data and data.get("results"):
         return data["results"][:10]
     return []
+
 
 def get_place_details(place_id):
     """Fetch place details using Google Maps API, including rating, user ratings, opening hours, URL, and accessibility information."""
