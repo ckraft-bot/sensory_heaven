@@ -26,17 +26,32 @@ def geocode_location(location_input):
         return location["lat"], location["lng"]
     return None
 
-def get_sensory_friendly_places(location, radius=1000, keyword=None):
-    """Fetch sensory-friendly places using Google Places Nearby Search API."""
-    url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+def get_sensory_friendly_places(location, radius=1000):
+    """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants and limited to 10 results."""
+    url = GOOGLE_MAPS_API_NEARBY
+    sensory_keywords = [
+        "autism", 
+        "cozy", 
+        "dim", 
+        "peaceful",
+        "quiet", 
+        "booth", 
+        "plant", 
+        "flower", 
+        "low-lighting"
+    ]
     params = {
         "location": f"{location[0]},{location[1]}",
         "radius": radius,
-        "keyword": keyword or "sensory-friendly",
+        "keyword": " OR ".join(sensory_keywords),
+        "type": "restaurant",  # Filters to show only restaurants
         "key": GOOGLE_MAPS_API_KEY,
     }
+    
     data = fetch_data(url, headers=None, params=params)
-    return data.get("results", []) if data else []
+    if data and data.get("results"):
+        return data["results"][:10]  # Limit to 10 results
+    return []
 
 def get_place_details(place_id):
     """Fetch place details using Google Maps API."""
@@ -68,7 +83,7 @@ def display_place_info(name, address, photos, reviews):
     if reviews:
         st.write("Reviews:")
         for review in reviews:
-            st.write(f"- {review['user']}: {review['text']}")
+            st.write(f"- Anonymous: {review['text']}")
     else:
         st.write("No reviews :speech_balloon: available.")
 
@@ -87,10 +102,8 @@ def main():
             coordinates = [location[0], location[1]]
             st.write(f"Coordinates for {location_input}: {coordinates}")
 
-            # Fetch sensory-friendly places
-            sensory_places = get_sensory_friendly_places(
-                coordinates, radius=radius_input, keyword="sensory-friendly OR autism OR quiet OR peaceful"
-            )
+            # Fetch sensory-friendly places using Google Places Nearby Search API
+            sensory_places = get_sensory_friendly_places(coordinates, radius=radius_input)
 
             if sensory_places:
                 m = folium.Map(location=coordinates, zoom_start=15)
@@ -102,7 +115,7 @@ def main():
                     longitude = place["geometry"]["location"]["lng"]
                     place_id = place.get("place_id")
 
-                    # Fetch details like photos and reviews
+                    # Fetch details like photos and reviews using the place_id
                     details = get_place_details(place_id)
                     photo_reference = details.get("photos", [{}])[0].get("photo_reference")
                     photo_url = get_place_photos(photo_reference)
