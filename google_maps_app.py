@@ -26,6 +26,7 @@ def geocode_location(location_input):
         return location["lat"], location["lng"]
     return None
 
+
 def get_sensory_friendly_places(location, radius=1000):
     """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants, bars, cafes, and coffee shops."""
     url = GOOGLE_MAPS_API_NEARBY
@@ -36,27 +37,31 @@ def get_sensory_friendly_places(location, radius=1000):
         "peaceful",
         "quiet", 
         "booth", 
-        "plant", 
-        "flower", 
-        "low-lighting"
+        "plant",  
+        "low-lighting",
+        "dimmed lighting",
+        "sensory friendly",
+        "sensory-friendly"
     ]
     
+    # Standardize keywords to uppercase
+    standardized_keywords = [keyword.upper() for keyword in sensory_keywords]
+    
     # Expanding the scope to include restaurants, bars, cafes, and coffee shops
-    place_types = "restaurant|bar|cafe|coffee_shop"  # Comma-separated list for multiple types
+    place_types = "restaurant|bar|cafe|coffee_shop"
     
     params = {
         "location": f"{location[0]},{location[1]}",
         "radius": radius,
-        "keyword": " OR ".join(sensory_keywords),
-        "type": place_types,  # Updated to include more types
+        "keyword": " OR ".join(standardized_keywords),
+        "type": place_types,
         "key": GOOGLE_MAPS_API_KEY,
     }
     
     data = fetch_data(url, headers=None, params=params)
     if data and data.get("results"):
-        return data["results"][:10]  # Limit to 10 results
+        return data["results"][:10]
     return []
-
 
 def get_place_details(place_id):
     """Fetch place details using Google Maps API, including rating, user ratings, opening hours, URL, and accessibility information."""
