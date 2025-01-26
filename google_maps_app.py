@@ -30,6 +30,27 @@ def geocode_location(location_input):
 def get_sensory_friendly_places(location, radius=1000):
     """Fetch sensory-friendly places using Google Places Nearby Search API, filtered to show restaurants, bars, cafes, and coffee shops."""
     url = GOOGLE_MAPS_API_NEARBY
+    # too specific
+    # sensory_keywords = [
+    #     "autism", 
+    #     "cozy",  
+    #     "peaceful",
+    #     "booth",  
+    #     "quiet", 
+    #     "headphone",
+    #     "low volume",
+    #     "volume low",
+    #     "low-lighting",
+    #     "dim",
+    #     "dimmed lighting",
+    #     "sensory friendly",
+    #     "sensory-friendly",
+    #     "sensory",
+    #     "sensory processing needs",
+    #     "fidget",
+    #     "asl",
+    # ]
+    
     sensory_keywords = [
         "autism", 
         "cozy", 
@@ -37,11 +58,9 @@ def get_sensory_friendly_places(location, radius=1000):
         "peaceful",
         "quiet", 
         "booth", 
-        "plant",  
-        "low-lighting",
-        "dimmed lighting",
-        "sensory friendly",
-        "sensory-friendly"
+        "plant", 
+        "flower", 
+        "low-lighting"
     ]
     
     # Standardize keywords to uppercase
@@ -54,6 +73,7 @@ def get_sensory_friendly_places(location, radius=1000):
         "location": f"{location[0]},{location[1]}",
         "radius": radius,
         "keyword": " OR ".join(standardized_keywords),
+        # "keyword": " OR ".join(sensory_keywords),
         "type": place_types,
         "key": GOOGLE_MAPS_API_KEY,
     }
