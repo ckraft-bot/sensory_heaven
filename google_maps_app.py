@@ -80,10 +80,12 @@ def display_place_info(name, address, photos, reviews):
         st.image(photos[0], caption=name, width=300)
     else:
         st.write("No photos :camera_with_flash: available.")
+
+    # Reviews section with expandable/collapsible option
     if reviews:
-        st.write("Reviews:")
-        for review in reviews:
-            st.write(f"- Anonymous: {review['text']}")
+        with st.expander("Reviews", expanded=False):
+            for review in reviews:
+                st.write(f"- Anonymous: {review['text']}")
     else:
         st.write("No reviews :speech_balloon: available.")
 
