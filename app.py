@@ -54,8 +54,15 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
         "Authorization": FOURSQUARE_API_KEY
     }
     sensory_keywords = [
-        "accessibility", "accessible", "autism", "cozy", "dim", "peaceful",
-        "quiet", "booths", "plant", "flower", "low-lighting"
+        "autism", 
+        "cozy", 
+        "dim", 
+        "peaceful",
+        "quiet", 
+        "booth", 
+        "plant", 
+        "flower", 
+        "low-lighting"
     ]
     params = {
         "ll": location,
@@ -72,8 +79,13 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
 def is_accessible(place):
     """Check if a place has accessibility-related keywords."""
     accessibility_keywords = [
-        "wheelchair", "accessible", "ramp", "accessible parking",
-        "family bathroom", "elevator", "lift"
+        "wheelchair", 
+        "accessible", 
+        "ramp", 
+        "accessible parking",
+        "family bathroom", 
+        "elevator", 
+        "lift"
     ]
     
     # Combine relevant fields to search for keywords
