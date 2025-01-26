@@ -3,7 +3,7 @@ import folium
 from folium import Icon
 from streamlit_folium import st_folium
 import requests
-from config import GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_API_NEARBY
+from config import GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_API_PLACES, GOOGLE_MAPS_API_PLACES_DETAILS, GOOGLE_MAPS_API_NEARBY, GOOGLE_MAPS_API_URL_PHOTOS
 
 def fetch_data(url, headers=None, params=None):
     """Fetch data from an API endpoint."""
@@ -18,7 +18,7 @@ def fetch_data(url, headers=None, params=None):
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Google Maps API."""
-    url = f"https://maps.googleapis.com/maps/api/geocode/json"
+    url = GOOGLE_MAPS_API_PLACES
     params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY}
     data = fetch_data(url, headers=None, params=params)
     if data and data.get("results"):
@@ -27,7 +27,7 @@ def geocode_location(location_input):
     return None
 
 def get_sensory_friendly_places(location, radius=1000, keyword=None):
-    """Fetch sensory-friendly places using Google Places API."""
+    """Fetch sensory-friendly places using Google Places Nearby Search API."""
     url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
     params = {
         "location": f"{location[0]},{location[1]}",
@@ -40,7 +40,7 @@ def get_sensory_friendly_places(location, radius=1000, keyword=None):
 
 def get_place_details(place_id):
     """Fetch place details using Google Maps API."""
-    url = f"https://maps.googleapis.com/maps/api/place/details/json"
+    url = GOOGLE_MAPS_API_PLACES_DETAILS
     params = {"place_id": place_id, "fields": "name,formatted_address,photo,review", "key": GOOGLE_MAPS_API_KEY}
     data = fetch_data(url, headers=None, params=params)
     return data.get("result", {}) if data else {}
@@ -49,7 +49,7 @@ def get_place_photos(photo_reference):
     """Get photo URL from Google Maps API."""
     if not photo_reference:
         return None
-    url = f"https://maps.googleapis.com/maps/api/place/photo"
+    url = GOOGLE_MAPS_API_URL_PHOTOS
     params = {
         "maxwidth": 400,
         "photoreference": photo_reference,
