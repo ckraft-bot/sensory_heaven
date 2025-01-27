@@ -1,8 +1,15 @@
 import streamlit as st
+from streamlit_folium import st_folium
+import os
+import requests
 import folium
 from folium import Icon
-from streamlit_folium import st_folium
-import requests
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# for nonprod only
 from config import (
     GOOGLE_MAPS_API_KEY,
     GOOGLE_MAPS_API_PLACES,
@@ -22,17 +29,15 @@ def fetch_data(url, params=None):
         st.error(f"API request failed: {e}")
         return None
 
-
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Google Maps API."""
-    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY}
+    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # need to repoint
     data = fetch_data(GOOGLE_MAPS_API_PLACES, params=params)
     if data and data.get("results"):
         location = data["results"][0]["geometry"]["location"]
         return location["lat"], location["lng"]
     return None
-
 
 def get_sensory_friendly_places(location, radius=1000, place_types="bakery|bar|cafe|restaurant"):
     """Fetch sensory-friendly places using Google Places Nearby Search API."""
@@ -44,22 +49,20 @@ def get_sensory_friendly_places(location, radius=1000, place_types="bakery|bar|c
         "radius": radius,
         "keyword": " OR ".join(keywords),
         "type": place_types,
-        "key": GOOGLE_MAPS_API_KEY,
+        "key": GOOGLE_MAPS_API_KEY, # need to repoint
     }
     data = fetch_data(GOOGLE_MAPS_API_NEARBY, params=params)
     return data.get("results", [])[:10] if data else []
-
 
 def get_place_details(place_id):
     """Fetch detailed information about a place."""
     params = {
         "place_id": place_id,
         "fields": "name,formatted_address,photo,review,rating,user_ratings_total,opening_hours,url",
-        "key": GOOGLE_MAPS_API_KEY,
+        "key": GOOGLE_MAPS_API_KEY, # need to repoint
     }
     data = fetch_data(GOOGLE_MAPS_API_PLACES_DETAILS, params=params)
     return data.get("result", {}) if data else {}
-
 
 def get_place_photos(photo_reference):
     """Construct a photo URL from the photo reference."""
@@ -68,7 +71,7 @@ def get_place_photos(photo_reference):
     params = {
         "maxwidth": 400,
         "photoreference": photo_reference,
-        "key": GOOGLE_MAPS_API_KEY,
+        "key": GOOGLE_MAPS_API_KEY, # need to repoint
     }
     return f"{GOOGLE_MAPS_API_URL_PHOTOS}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
 
@@ -123,6 +126,64 @@ def render_map(location, places):
         ).add_to(m)
     st_folium(m, width=800, height=500)
 
+def send_email(name, sender_email, message):
+    """Send the email from the contact page."""
+    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_PORT = 465
+    SUBJECT = "Sensory Heaven Contact Form Submission"
+    
+    # Fetch credentials securely (use environment variables in production)
+    EMAIL_USERNAME = os.environ['email_username'] # [should match yaml def]
+    EMAIL_PASSWORD = os.environ['email_password'] # [should match yaml def]
+
+    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+        raise ValueError("Email credentials not found. Ensure they are set properly.")
+
+    # Email content
+    recipient_email = EMAIL_USERNAME  
+    body = f"""
+    <html>
+        <body>
+            <p><strong>Name:</strong> {name}</p>
+            <p><strong>Email (sender):</strong> {sender_email}</p>
+            <p><strong>Message:</strong> {message}</p>
+        </body>
+    </html>
+    """
+
+    # Compose email
+    msg = MIMEMultipart('alternative')
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = SUBJECT
+    msg.attach(MIMEText(body, 'html'))
+
+    # Send the email
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
+        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+
+# Main function for Contact page
+def contact_form():
+    # Input fields
+    user_name = st.text_input("Your Name")
+    user_email = st.text_input("Your Email")
+    user_message = st.text_area("Your Message")
+
+    if st.button("Submit"):
+        # Validate inputs
+        if not user_name or not user_email or not user_message:
+            st.error("All fields are required!")
+        elif "@" not in user_email:  # Basic email validation
+            st.error("Please enter a valid email address!")
+        else:
+            # Send the email
+            try:
+                send_email(user_name, user_email, user_message)
+                st.success("Thank you! Your message has been sent.")
+            except Exception as e:
+                st.error(f"Failed to send your message: {e}")
 
 def main():
     st.sidebar.title("Navigation")
@@ -165,17 +226,11 @@ def main():
         - low-lighting
         - peaceful
         - quiet
-
         """)
 
     elif page == "Contact":
         st.title("Sensory Heaven - Contact")
-        st.text_input("Your Name")
-        st.text_input("Your Email")
-        st.text_area("Your Message")
-        if st.button("Submit"):
-            st.success("Thank you! Your message has been sent.")
-
+        contact_form()
 
 if __name__ == "__main__":
     main()
