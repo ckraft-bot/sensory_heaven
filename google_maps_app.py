@@ -9,15 +9,18 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# for nonprod only
+
 from config import (
-    GOOGLE_MAPS_API_KEY,
+    # GOOGLE_MAPS_API_KEY, <-- for nonprod only
     GOOGLE_MAPS_API_PLACES,
     GOOGLE_MAPS_API_PLACES_DETAILS,
     GOOGLE_MAPS_API_NEARBY,
     GOOGLE_MAPS_API_URL_PHOTOS,
     GOOGLE_PLACE_TYPES,
 )
+
+# Fetch credentials securely (use environment variables in production)
+GOOGLE_MAPS_API_KEY = os.environ['GOOGLE_MAPS_API_KEY'] # [should match yaml def]
 
 def fetch_data(url, params=None):
     """Fetch data from an API endpoint."""
@@ -32,7 +35,8 @@ def fetch_data(url, params=None):
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Google Maps API."""
-    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # need to repoint
+
+    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # repinted, secure now
     data = fetch_data(GOOGLE_MAPS_API_PLACES, params=params)
     if data and data.get("results"):
         location = data["results"][0]["geometry"]["location"]
@@ -49,7 +53,7 @@ def get_sensory_friendly_places(location, radius=1000, place_types="bakery|bar|c
         "radius": radius,
         "keyword": " OR ".join(keywords),
         "type": place_types,
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     data = fetch_data(GOOGLE_MAPS_API_NEARBY, params=params)
     return data.get("results", [])[:10] if data else []
@@ -59,7 +63,7 @@ def get_place_details(place_id):
     params = {
         "place_id": place_id,
         "fields": "name,formatted_address,photo,review,rating,user_ratings_total,opening_hours,url",
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     data = fetch_data(GOOGLE_MAPS_API_PLACES_DETAILS, params=params)
     return data.get("result", {}) if data else {}
@@ -71,7 +75,7 @@ def get_place_photos(photo_reference):
     params = {
         "maxwidth": 400,
         "photoreference": photo_reference,
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     return f"{GOOGLE_MAPS_API_URL_PHOTOS}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
 
