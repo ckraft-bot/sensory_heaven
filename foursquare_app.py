@@ -16,11 +16,11 @@ def business_selection():
     """Streamlit widget for selecting a business category."""
     selected_category = st.selectbox(
         "Select the business category you are interested in:",
-        options=list(CATEGORIES.keys()),
+        options=list(FOURSQUARE_CATEGORIES.keys()),
         index=0
     )
     st.write(f"You selected: **{selected_category}**")
-    return CATEGORIES[selected_category]
+    return FOURSQUARE_CATEGORIES[selected_category]
 
 def fetch_data(url, headers, params=None):
     """Fetch data from an API endpoint."""
