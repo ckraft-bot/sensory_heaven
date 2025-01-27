@@ -1,0 +1,39 @@
+name: Sensory Heaven Job
+
+on:
+  Triggers the workflow on PRs
+  pull_request:
+    branches:
+      - main
+
+  # # Triggers the workflow 3 am every Saturday
+  # schedule:
+  #   - cron: "0 3 * * 6"
+
+env:
+  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }} # env_var: secrets.REPO_SECRETS
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3  
+
+    - name: Set up Python
+      uses: actions/setup-python@v4  # Use the latest version of setup-python
+      with:
+        python-version: '3.10.16'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: List files in the repository (recursive)
+      run: |
+        ls -alR  # Lists all files to check the directory structure
+
+    - name: Run app
+      run: |
+        python google_maps_app.py
