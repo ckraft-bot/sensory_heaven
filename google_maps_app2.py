@@ -9,15 +9,18 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# for nonprod only
+
 from config import (
-    GOOGLE_MAPS_API_KEY,
+    # GOOGLE_MAPS_API_KEY, <-- for nonprod only
     GOOGLE_MAPS_API_PLACES,
     GOOGLE_MAPS_API_PLACES_DETAILS,
     GOOGLE_MAPS_API_NEARBY,
     GOOGLE_MAPS_API_URL_PHOTOS,
     GOOGLE_PLACE_TYPES,
 )
+
+# Fetch credentials securely (use environment variables in production)
+GOOGLE_MAPS_API_KEY = os.environ['GOOGLE_MAPS_API_KEY'] # [should match yaml def]
 
 def fetch_data(url, params=None):
     """Fetch data from an API endpoint."""
@@ -32,14 +35,15 @@ def fetch_data(url, params=None):
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Google Maps API."""
-    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # need to repoint
+
+    params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # repinted, secure now
     data = fetch_data(GOOGLE_MAPS_API_PLACES, params=params)
     if data and data.get("results"):
         location = data["results"][0]["geometry"]["location"]
         return location["lat"], location["lng"]
     return None
 
-def get_sensory_friendly_places(location, radius=1000, place_types="church|embassy|airport|park|"):
+def get_sensory_friendly_places(location, radius=1000, place_types="bakery|bar|cafe|restaurant"):
     """Fetch sensory-friendly places using Google Places Nearby Search API."""
     keywords = [
         "autism", "cozy", "dim", "peaceful", "quiet", "booth", "plant", "flower", "low-lighting", "ambiance"
@@ -49,7 +53,7 @@ def get_sensory_friendly_places(location, radius=1000, place_types="church|embas
         "radius": radius,
         "keyword": " OR ".join(keywords),
         "type": place_types,
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     data = fetch_data(GOOGLE_MAPS_API_NEARBY, params=params)
     return data.get("results", [])[:10] if data else []
@@ -59,7 +63,7 @@ def get_place_details(place_id):
     params = {
         "place_id": place_id,
         "fields": "name,formatted_address,photo,review,rating,user_ratings_total,opening_hours,url",
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     data = fetch_data(GOOGLE_MAPS_API_PLACES_DETAILS, params=params)
     return data.get("result", {}) if data else {}
@@ -71,7 +75,7 @@ def get_place_photos(photo_reference):
     params = {
         "maxwidth": 400,
         "photoreference": photo_reference,
-        "key": GOOGLE_MAPS_API_KEY, # need to repoint
+        "key": GOOGLE_MAPS_API_KEY, # repinted, secure now
     }
     return f"{GOOGLE_MAPS_API_URL_PHOTOS}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
 
@@ -133,8 +137,8 @@ def send_email(name, sender_email, message):
     SUBJECT = "Sensory Heaven Contact Form Submission"
     
     # Fetch credentials securely (use environment variables in production)
-    EMAIL_USERNAME = os.environ['email_username'] # [should match yaml def]
-    EMAIL_PASSWORD = os.environ['email_password'] # [should match yaml def]
+    EMAIL_USERNAME = os.environ['EMAIL_USERNAME'] # [should match yaml def]
+    EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD'] # [should match yaml def]
 
     if not EMAIL_USERNAME or not EMAIL_PASSWORD:
         raise ValueError("Email credentials not found. Ensure they are set properly.")
@@ -187,7 +191,7 @@ def contact_form():
 
 def main():
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact"])
+    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
@@ -231,6 +235,23 @@ def main():
     elif page == "Contact":
         st.title("Sensory Heaven - Contact")
         contact_form()
+
+    elif page == "Donate":
+        st.title("Sensory Heaven - Donate")
+        
+        st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
+                Below I have added two options, you can choose the one that i convenient to you.
+                Again, I really appreciate your support!""")
+
+        # Creating an expander for Venmo
+        with st.expander("Venmo"):
+            st.write("Venmo link: https://venmo.com/code?user_id=2471244549062656744")
+            st.image('Media/venmo_qr.jpg', caption='Venmo QR code')
+
+        # Creating an expander for CashApp
+        with st.expander("CashApp"):
+            st.write("Venmo link: https://cash.app/$claireykraft")
+            st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
 
 if __name__ == "__main__":
     main()

@@ -8,8 +8,6 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
-
 from config import (
     # GOOGLE_MAPS_API_KEY, <-- for nonprod only
     GOOGLE_MAPS_API_PLACES,
@@ -35,7 +33,6 @@ def fetch_data(url, params=None):
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Google Maps API."""
-
     params = {"address": location_input, "key": GOOGLE_MAPS_API_KEY} # repinted, secure now
     data = fetch_data(GOOGLE_MAPS_API_PLACES, params=params)
     if data and data.get("results"):
@@ -57,6 +54,27 @@ def get_sensory_friendly_places(location, radius=1000, place_types="bakery|bar|c
     }
     data = fetch_data(GOOGLE_MAPS_API_NEARBY, params=params)
     return data.get("results", [])[:10] if data else []
+
+def is_accessible(place_id):
+    """Check if a place is accessible (ADA compliant) using Google Places Details API."""
+    url = f'{GOOGLE_MAPS_API_PLACES_DETAILS}?place_id={place_id}&fields=accessibility&key={GOOGLE_MAPS_API_KEY}'
+    response = requests.get(url)
+    data = response.json()
+
+    # Check if the 'result' and 'accessibility' fields are present
+    if 'result' in data and 'accessibility' in data['result']:
+        accessibility_attributes = data['result']['accessibility']
+        return accessibility_attributes
+    return None
+
+def mark_accessibility(places):
+    """Mark sensory-friendly places as accessible or not."""
+    for place in places:
+        place_id = place.get("place_id")
+        if place_id:
+            accessibility_attributes = is_accessible(place_id)
+            place["accessibility"] = accessibility_attributes if accessibility_attributes else "Not accessible"
+    return places
 
 def get_place_details(place_id):
     """Fetch detailed information about a place."""
@@ -96,6 +114,10 @@ def display_place_info(place, details):
         st.image(photo_url, caption=name, use_container_width=True)
     else:
         st.write("No photos available.")
+
+    # Display accessibility status
+    accessibility_status = place.get("accessibility", "Accessibility information not available")
+    st.write(f"Accessibility: {accessibility_status}")
 
     # Display overall rating
     rating = details.get("rating", "No rating available")
@@ -199,15 +221,28 @@ def main():
         radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
 
         if location_input:
+            location = geocode_location
+
+def main():
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
+
+    if page == "Find":
+        st.title("Sensory Heaven - Find")
+        location_input = st.text_input("Enter a location:", "Stockholm")
+        radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
+
+        if location_input:
             location = geocode_location(location_input)
             if location:
                 st.write(f"Coordinates for {location_input}: {location}")
                 places = get_sensory_friendly_places(location, radius=radius_input)
-                if places:
-                    for place in places:
+                marked_places = mark_accessibility(places)
+                if marked_places:
+                    for place in marked_places:
                         details = get_place_details(place.get("place_id"))
                         display_place_info(place, details)
-                    render_map(location, places)
+                    render_map(location, marked_places)
                 else:
                     st.write("No sensory-friendly places found in the specified radius.")
             else:
@@ -240,7 +275,7 @@ def main():
         st.title("Sensory Heaven - Donate")
         
         st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
-                Below I have added two options, you can choose the one that i convenient to you.
+                Below I have added two options, you can choose the one that is convenient to you.
                 Again, I really appreciate your support!""")
 
         # Creating an expander for Venmo
