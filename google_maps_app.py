@@ -246,12 +246,12 @@ def main():
         # Creating an expander for Venmo
         with st.expander("Venmo"):
             st.write("Venmo link: https://venmo.com/code?user_id=2471244549062656744")
-            st.image('venmo_qr.jpg', caption='Venmo QR code')
+            st.image('Media/venmo_qr.jpg', caption='Venmo QR code')
 
         # Creating an expander for CashApp
         with st.expander("CashApp"):
             st.write("Venmo link: https://cash.app/$claireykraft")
-            st.image('cashapp_qr.jpg', caption='CashApp QR code')
+            st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
 
 if __name__ == "__main__":
     main()
