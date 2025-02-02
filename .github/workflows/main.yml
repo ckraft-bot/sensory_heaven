@@ -14,7 +14,7 @@ on:
 env:
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }} # env_var: secrets.REPO_SECRETS
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }} # env_var: secrets.REPO_SECRETS
-  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }} # env_var: secrets.REPO_SECRETS
+  FOURSQUARE_API_KEY: ${{ secrets.FOURSQUARE_API_KEY }} # env_var: secrets.REPO_SECRETS
 
 jobs:
   test:
@@ -33,7 +33,6 @@ jobs:
       run: |
         echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD  }}" >> $GITHUB_ENV
         echo "EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME  }}" >> $GITHUB_ENV
-        echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> $GITHUB_ENV
         
     - name: Install dependencies
       run: |
@@ -46,4 +45,4 @@ jobs:
 
     - name: Run app
       run: |
-        python google_maps_app.py
+        python foursquare_app.py
