@@ -31,7 +31,8 @@ def fetch_data(url, headers, params=None):
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        st.error(f"API request failed: {e}")
+        # debugging use only
+        #st.error(f"API request failed: {e}")
         return None
 
 def business_selection():
@@ -236,6 +237,16 @@ def main():
         st.write("""
         **What is sensory-friendly?**  
         Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
+        
+        **Call to action**  
+        Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
+        This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
+        While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
+        It is essential that people with disabilities have opportunities to enjoy public spaces, be included in the community, and feel a sense of belonging in society. 
+        Currently, there is no such app on the market; this presents a prime opportunity to fill the gap. 
+        I invite you to join me in imporving this app for everyone. 
+        Look at the "Features" list below to see what features are driving the search results on the "Find" tab and offer feedback on the features (to add, or modify, or omit). 
+        You can contact me via the "Contact" tab.
         """)
         st.write("""
         **Features:**  
