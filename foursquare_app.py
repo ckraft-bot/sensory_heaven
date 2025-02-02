@@ -9,6 +9,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import config
 from config import (
     FOURSQUARE_API_KEY,
     FOURSQUARE_API_URL_PHOTOS,
