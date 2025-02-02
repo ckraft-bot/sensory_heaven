@@ -33,6 +33,22 @@ def fetch_data(url, headers, params=None):
         st.error(f"API request failed: {e}")
         return None
 
+def is_accessible(place, reviews):
+    """Check if a place has accessibility-related keywords."""
+    # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
+    accessibility_keywords = [
+        "wheelchair",
+        # "wheelchair accessible entrance", # too specific, getting filtered out
+        # "wheelchair accessible restroom", # too specific, getting filtered out 
+        # "wheelchair accessible seating", # too specific, getting filtered out
+        # "wheelchair accessible parking", # too specific, getting filtered out
+        "family bathroom", 
+        # "wheelchair-accessible elevator" # too specific, getting filtered out
+        "elevator"
+    ]
+    place_info = (place.get("description", "") + " ".join([review["text"] for review in reviews])).lower()
+    return any(keyword in place_info for keyword in accessibility_keywords)
+
 def get_place_photos(place_id):
     """Fetch photos for a place from Foursquare API."""
     headers = {
@@ -56,23 +72,14 @@ def get_place_reviews(place_id):
         for tip in data
     ] if data else []
 
-def is_accessible(place):
-    """Check if a place has accessibility-related keywords."""
-    # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
-    accessibility_keywords = [
-        "wheelchair",
-        "wheelchair accessible entrance", 
-        "wheelchair accessible restroom", 
-        "wheelchair accessible seating", 
-        "wheelchair accessible parking",
-        "family bathroom", 
-        "wheelchair-accessible elevator"
-    ]
-    place_info = (
-        place.get("description", "") + 
-        " ".join([review["text"] for review in get_place_reviews(place.get("fsq_id", ""))])
-    ).lower()
-    return any(keyword in place_info for keyword in accessibility_keywords)
+def business_selection():
+    """Streamlit widget for selecting a business category."""
+    selected_category = st.selectbox(
+        "Select the business category you are interested in:",
+        list(FOURSQUARE_CATEGORIES.keys()), index=0
+    )
+    st.write(f"You selected: **{selected_category}**")
+    return FOURSQUARE_CATEGORIES[selected_category]
 
 def get_sensory_friendly_places(location, radius=1000, category_id=None):
     """Fetch sensory-friendly places using Foursquare API."""
@@ -89,7 +96,8 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
         "low-lighting",
         "peaceful", 
         "quiet", 
-        "sensory-friendly"
+        "sensory"
+        # "sensory-friendly" # pulled in reviews where customer service was friendly
     ]
     params = {
         "ll": location,
@@ -97,8 +105,15 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
         "query": " OR ".join(sensory_keywords),
         "limit": 10,
     }
+    
     if category_id:
-        params["categoryId"] = category_id # filter based on user selection in business_selection()
+        if isinstance(category_id, list):  # Ensure correct format
+            category_id = ",".join(map(str, category_id))
+        params["categories"] = category_id  # Use correct parameter name
+
+    # Debugging use only
+    #st.write("API Request Parameters:", params)  
+    
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
 
@@ -187,7 +202,7 @@ def main():
                         longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
                         photo_urls = get_place_photos(place.get("fsq_id", ""))
                         reviews = get_place_reviews(place.get("fsq_id", ""))
-                        accessible = is_accessible(place)
+                        accessible = is_accessible(place, reviews)
                         
                         if latitude and longitude:
                             popup_content = f"<b>{name}</b><br>{address}"
@@ -197,7 +212,7 @@ def main():
                                 [latitude, longitude], 
                                 popup=popup_content, 
                                 icon=Icon(
-                                    icon="wheelchair" if accessible else "cutlery", 
+                                    icon="wheelchair" if accessible else "smile", 
                                     icon_color="white", 
                                     color="blue" if accessible else "green", 
                                     prefix="fa"
