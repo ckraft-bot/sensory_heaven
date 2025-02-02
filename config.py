@@ -1,13 +1,16 @@
+#-------------------------------------------------- Foursquare --------------------------------------------------#
 FOURSQUARE_API_URL_SEARCH = "https://api.foursquare.com/v3/places/search"
 FOURSQUARE_API_URL_PHOTOS = "https://api.foursquare.com/v3/places/{fsq_id}/photos"
 FOURSQUARE_API_URL_REVIEWS = "https://api.foursquare.com/v3/places/{fsq_id}/tips"
-
+FOURSQUARE_API_KEY = "fsq3COFPhHd+kdomv9CJza3DLGw60xtpEn5S1VWauImxDZE="
 # Foursquare category IDs: https://docs.foursquare.com/data-products/docs/categories
 FOURSQUARE_CATEGORIES = {#"Food and Beverage":"56aa371be4b08b9a8d573550", # Business and Professional Services > Food and Beverage Service
             #"Dinning and Drinking":"63be6904847c3692a84b9bb5", # Dinning and Drinking
             "Restaurant": "4d4b7105d754a06374d81259" # Dining and Drinking > Restaurant
+
                } 
 
+#-------------------------------------------------- Google --------------------------------------------------#
 GOOGLE_MAPS_API_BASE_URL = "https://maps.googleapis.com/maps/api"
 GOOGLE_MAPS_API_PLACES = f"{GOOGLE_MAPS_API_BASE_URL}/geocode/json"
 GOOGLE_MAPS_API_PLACES_DETAILS = f"{GOOGLE_MAPS_API_BASE_URL}/place/details/json" 
@@ -111,4 +114,4 @@ GOOGLE_PLACE_TYPES = [
          "university",
          "veterinary_care",
          "zoo"
-    ]
+      ]

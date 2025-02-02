@@ -221,18 +221,6 @@ def main():
         radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
 
         if location_input:
-            location = geocode_location
-
-def main():
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
-
-    if page == "Find":
-        st.title("Sensory Heaven - Find")
-        location_input = st.text_input("Enter a location:", "Stockholm")
-        radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
-
-        if location_input:
             location = geocode_location(location_input)
             if location:
                 st.write(f"Coordinates for {location_input}: {location}")
