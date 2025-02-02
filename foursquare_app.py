@@ -33,20 +33,36 @@ def fetch_data(url, headers, params=None):
         st.error(f"API request failed: {e}")
         return None
 
-def is_accessible(place, reviews):
+def business_selection():
+    """Take in user input on prefered business."""
+    selected_category = st.selectbox(
+        "Select the business category you are interested in:",
+        list(FOURSQUARE_CATEGORIES.keys()), index=0
+    )
+    st.write(f"You selected: **{selected_category}**")
+    return FOURSQUARE_CATEGORIES[selected_category]
+
+def is_accessible(place):
     """Check if a place has accessibility-related keywords."""
     # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
     accessibility_keywords = [
         "wheelchair",
+        "accessible",
         # "wheelchair accessible entrance", # too specific, getting filtered out
         # "wheelchair accessible restroom", # too specific, getting filtered out 
         # "wheelchair accessible seating", # too specific, getting filtered out
         # "wheelchair accessible parking", # too specific, getting filtered out
-        "family bathroom", 
         # "wheelchair-accessible elevator" # too specific, getting filtered out
-        "elevator"
+        "elevator",
+        "ramp"
     ]
-    place_info = (place.get("description", "") + " ".join([review["text"] for review in reviews])).lower()
+    # Combine relevant fields to search for keywords
+    place_info = (
+        place.get("description", "") + 
+        " ".join([review["text"] for review in get_place_reviews(place.get("fsq_id", ""))])
+    ).lower()
+
+    # Check for any accessibility keyword
     return any(keyword in place_info for keyword in accessibility_keywords)
 
 def get_place_photos(place_id):
@@ -71,15 +87,6 @@ def get_place_reviews(place_id):
         {"user": tip.get("user", {}).get("firstName", "Anonymous"), "text": tip.get("text", "")}
         for tip in data
     ] if data else []
-
-def business_selection():
-    """Streamlit widget for selecting a business category."""
-    selected_category = st.selectbox(
-        "Select the business category you are interested in:",
-        list(FOURSQUARE_CATEGORIES.keys()), index=0
-    )
-    st.write(f"You selected: **{selected_category}**")
-    return FOURSQUARE_CATEGORIES[selected_category]
 
 def get_sensory_friendly_places(location, radius=1000, category_id=None):
     """Fetch sensory-friendly places using Foursquare API."""
@@ -132,12 +139,6 @@ def display_place_info(name, address, photos, reviews):
     else:
         st.write("No reviews :speech_balloon: available.")
 
-def business_selection():
-    """Streamlit widget for selecting a business category."""
-    selected_category = st.selectbox("Select the business category you are interested in:", list(FOURSQUARE_CATEGORIES.keys()), index=0)
-    st.write(f"You selected: **{selected_category}**")
-    return FOURSQUARE_CATEGORIES[selected_category]
-
 def send_email(name, sender_email, message):
     """Send the email from the contact page."""
     EMAIL_USERNAME = os.getenv('EMAIL_USERNAME')
@@ -174,7 +175,7 @@ def main():
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
-        location_input = st.text_input("Enter a location:", "Stockholm")
+        location_input = st.text_input("Enter a location:", "Boston")
         radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
         category_id = business_selection()
 
@@ -202,7 +203,7 @@ def main():
                         longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
                         photo_urls = get_place_photos(place.get("fsq_id", ""))
                         reviews = get_place_reviews(place.get("fsq_id", ""))
-                        accessible = is_accessible(place, reviews)
+                        accessible = is_accessible(place)
                         
                         if latitude and longitude:
                             popup_content = f"<b>{name}</b><br>{address}"
