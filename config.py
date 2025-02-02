@@ -3,12 +3,23 @@ FOURSQUARE_API_URL_SEARCH = "https://api.foursquare.com/v3/places/search"
 FOURSQUARE_API_URL_PHOTOS = "https://api.foursquare.com/v3/places/{fsq_id}/photos"
 FOURSQUARE_API_URL_REVIEWS = "https://api.foursquare.com/v3/places/{fsq_id}/tips"
 FOURSQUARE_API_KEY = "fsq3COFPhHd+kdomv9CJza3DLGw60xtpEn5S1VWauImxDZE="
-# Foursquare category IDs: https://docs.foursquare.com/data-products/docs/categories
-FOURSQUARE_CATEGORIES = {#"Food and Beverage":"56aa371be4b08b9a8d573550", # Business and Professional Services > Food and Beverage Service
-            #"Dinning and Drinking":"63be6904847c3692a84b9bb5", # Dinning and Drinking
-            "Restaurant": "4d4b7105d754a06374d81259" # Dining and Drinking > Restaurant
 
-               } 
+# Foursquare category IDs: https://docs.foursquare.com/data-products/docs/categories
+FOURSQUARE_CATEGORIES = {
+      "Restaurant": "4d4b7105d754a06374d81259",  # Dining and Drinking > Restaurant
+      "Cafe": "4bf58dd8d48988d16d941735",  # Dining and Drinking > Cafe, Coffee, and Tea House > Café
+      "Retail": "4d4b7105d754a06378d81259",  # Retail
+      "Sports & Rec": "4f4528bc4b90abdf24c9de85",  # Sports and Recreation
+      "Park": "4bf58dd8d48988d163941735",  # Landmarks and Outdoors > Park
+      "Library": "4bf58dd8d48988d12f941735",  # Community and Government > Library
+      "Movie Theater": "4bf58dd8d48988d17f941735",  # Arts and Entertainment > Movie Theater
+      "Museum": "4bf58dd8d48988d181941735",  # Arts and Entertainment > Museum
+      "Hospital": "4bf58dd8d48988d196941735",  # Health and Medicine > Hospital
+      "Places of Worship": "4bf58dd8d48988d131941735",  # Community and Government > Spiritual Center
+      "Zoo": "4bf58dd8d48988d17b941735",  # Arts and Entertainment > Zoo
+      "Aquarium": "4fceea171983d5d06c3e9823",  # Arts and Entertainment > Aquarium
+      "Airport": "4bf58dd8d48988d1ed931735"  # Travel and Transportation > Transport Hub > Airport
+   }
 
 #-------------------------------------------------- Google --------------------------------------------------#
 GOOGLE_MAPS_API_BASE_URL = "https://maps.googleapis.com/maps/api"

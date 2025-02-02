@@ -2,13 +2,13 @@ import streamlit as st
 import folium
 from folium import Icon
 from streamlit_folium import st_folium
+from geopy.geocoders import Nominatim
 import os
 import requests
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from geopy.geocoders import Nominatim
 from config import (
     FOURSQUARE_API_KEY,
     FOURSQUARE_API_URL_PHOTOS,
@@ -17,7 +17,6 @@ from config import (
     FOURSQUARE_CATEGORIES
 )
 
-# Cache geocoding results to improve performance
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Nominatim."""
@@ -59,9 +58,15 @@ def get_place_reviews(place_id):
 
 def is_accessible(place):
     """Check if a place has accessibility-related keywords."""
+    # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
     accessibility_keywords = [
-        "wheelchair", "accessible", "ramp", "accessible parking",
-        "family bathroom", "elevator", "lift"
+        "wheelchair",
+        "wheelchair accessible entrance", 
+        "wheelchair accessible restroom", 
+        "wheelchair accessible seating", 
+        "wheelchair accessible parking",
+        "family bathroom", 
+        "wheelchair-accessible elevator"
     ]
     place_info = (
         place.get("description", "") + 
@@ -76,8 +81,15 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
         "Authorization": FOURSQUARE_API_KEY
     }
     sensory_keywords = [
-        "autism", "cozy", "dim", "peaceful", "quiet", 
-        "booth", "plant", "flower", "low-lighting"
+        "ambiance",
+        "autism",
+        "booth",
+        "cozy",
+        "dim", 
+        "low-lighting",
+        "peaceful", 
+        "quiet", 
+        "sensory-friendly"
     ]
     params = {
         "ll": location,
@@ -86,19 +98,9 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
         "limit": 10,
     }
     if category_id:
-        params["categoryId"] = category_id
+        params["categoryId"] = category_id # filter based on user selection in business_selection()
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
-
-def business_selection():
-    """Streamlit widget for selecting a business category."""
-    selected_category = st.selectbox(
-        "Select the business category you are interested in:",
-        options=list(FOURSQUARE_CATEGORIES.keys()),
-        index=0
-    )
-    st.write(f"You selected: **{selected_category}**")
-    return FOURSQUARE_CATEGORIES[selected_category]
 
 def display_place_info(name, address, photos, reviews):
     """Display place information including photos and reviews."""
@@ -115,6 +117,42 @@ def display_place_info(name, address, photos, reviews):
     else:
         st.write("No reviews :speech_balloon: available.")
 
+def business_selection():
+    """Streamlit widget for selecting a business category."""
+    selected_category = st.selectbox("Select the business category you are interested in:", list(FOURSQUARE_CATEGORIES.keys()), index=0)
+    st.write(f"You selected: **{selected_category}**")
+    return FOURSQUARE_CATEGORIES[selected_category]
+
+def send_email(name, sender_email, message):
+    """Send the email from the contact page."""
+    EMAIL_USERNAME = os.getenv('EMAIL_USERNAME')
+    EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
+    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+        raise ValueError("Email credentials not found. Ensure they are set properly.")
+    
+    msg = MIMEMultipart('alternative')
+    msg['From'], msg['To'], msg['Subject'] = sender_email, EMAIL_USERNAME, "Sensory Heaven Contact Form Submission"
+    msg.attach(MIMEText(f"<html><body><p><strong>Name:</strong> {name}</p><p><strong>Email (sender):</strong> {sender_email}</p><p><strong>Message:</strong> {message}</p></body></html>", 'html'))
+    
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
+        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        server.sendmail(sender_email, EMAIL_USERNAME, msg.as_string())
+
+def contact_form():
+    """Streamlit contact form."""
+    user_name, user_email, user_message = st.text_input("Your Name"), st.text_input("Your Email"), st.text_area("Your Message")
+    if st.button("Submit"):
+        if not all([user_name, user_email, user_message]):
+            st.error("All fields are required!")
+        elif "@" not in user_email or not any(domain in user_email for domain in [".net", ".com", ".edu"]):
+            st.error("Please enter a valid email address!")
+        else:
+            try:
+                send_email(user_name, user_email, user_message)
+                st.success("Thank you! Your message has been sent.")
+            except Exception as e:
+                st.error(f"Failed to send your message: {e}")
+
 def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact"])
@@ -130,13 +168,18 @@ def main():
             if location:
                 coordinates = [location.latitude, location.longitude]
                 st.write(f"Coordinates for {location_input}: {coordinates}")
+
+                # Fetch sensory-friendly places
                 sensory_places = get_sensory_friendly_places(
                     f"{location.latitude},{location.longitude}", 
                     radius=radius_input, 
                     category_id=category_id
                 )
+                
                 if sensory_places:
                     m = folium.Map(location=coordinates, zoom_start=15)
+                    
+                    # Iterate over each place to display on the map and in the UI
                     for place in sensory_places:
                         name = place.get("name", "Unknown Place")
                         address = place.get("location", {}).get("address", "Address not available")
@@ -145,8 +188,11 @@ def main():
                         photo_urls = get_place_photos(place.get("fsq_id", ""))
                         reviews = get_place_reviews(place.get("fsq_id", ""))
                         accessible = is_accessible(place)
+                        
                         if latitude and longitude:
                             popup_content = f"<b>{name}</b><br>{address}"
+                            
+                            # Add markers to the map based on accessibility
                             folium.Marker(
                                 [latitude, longitude], 
                                 popup=popup_content, 
@@ -157,7 +203,11 @@ def main():
                                     prefix="fa"
                                 )
                             ).add_to(m)
+                        
+                        # Display place information below the map
                         display_place_info(name, address, photo_urls, reviews)
+                        
+                    # Render the map
                     st_folium(m, width=800, height=500)
                 else:
                     st.write("No sensory-friendly places found in the specified radius.")
@@ -166,11 +216,28 @@ def main():
 
     elif page == "Learn":
         st.title("Sensory Heaven - Learn")
-        st.write("Information about sensory-friendly places.")
+        st.write("""
+        **What is sensory-friendly?**  
+        Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
+        """)
+        st.write("""
+        **Features:**  
+        If a business has these _keywords_ in either their business profile or reviews then the establishment will be flagged as sensory friendly.
+        - ambiance
+        - autism
+        - booth
+        - cozy
+        - dim
+        - low-lighting
+        - peaceful
+        - quiet
+        - sensory-friendly
+        """)
+
 
     elif page == "Contact":
         st.title("Sensory Heaven - Contact")
-        st.write("Contact form coming soon.")
+        contact_form()
 
 if __name__ == "__main__":
     main()
