@@ -1,17 +1,16 @@
 [theme]
 
 # color palatte
-    # maize #E2C044
-    # cadet blue #9FB1BC
+    # old gold #E2C044
+    # cadet grey #9FB1BC
     # timberwolf #D3D0CB
-    # morning mist #2E5266
+    # dark slate blue #2E5266
 
 # the interactive elements
-primaryColor = "#E2C044" # maize
+primaryColor = "#E2C044" # old gold
 # main background color
-backgroundColor = "#9FB1BC" # cadet blue
+backgroundColor = "#9FB1BC" # cadet grey
 # sidebar, text boxes
 secondaryBackgroundColor = "D3D0CB" # timberwolf
-
 # text (alternatives: #F1FAEE, #404242)
 textColor = "#2E5266" # dark slate blue
