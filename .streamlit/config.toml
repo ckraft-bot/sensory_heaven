@@ -1,5 +1,7 @@
 [theme]
 
+font = "Arial"  # Default font setting
+
 # color palatte
     # old gold #E2C044
     # cadet grey #9FB1BC
