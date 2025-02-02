@@ -11,12 +11,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import config
 from config import (
-    FOURSQUARE_API_KEY,
     FOURSQUARE_API_URL_PHOTOS,
     FOURSQUARE_API_URL_REVIEWS,
     FOURSQUARE_API_URL_SEARCH,
     FOURSQUARE_CATEGORIES
 )
+FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
 
 @st.cache_data
 def geocode_location(location_input):
