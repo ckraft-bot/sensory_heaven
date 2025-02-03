@@ -172,7 +172,7 @@ def contact_form():
 
 def main():
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact"])
+    page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
@@ -256,5 +256,22 @@ def main():
         st.title("Sensory Heaven - Contact")
         contact_form()
 
+    elif page == "Donate":
+        st.title("Sensory Heaven - Donate")
+        
+        st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
+                Below I have added two options, you can choose the one that is convenient to you.
+                Again, I really appreciate your support!""")
+
+        # Creating an expander for Venmo
+        with st.expander("Venmo"):
+            st.write("Venmo link: https://venmo.com/code?user_id=2471244549062656744")
+            st.image('Media/venmo_qr.jpg', caption='Venmo QR code')
+
+        # Creating an expander for CashApp
+        with st.expander("CashApp"):
+            st.write("Venmo link: https://cash.app/$claireykraft")
+            st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
+            
 if __name__ == "__main__":
     main()
