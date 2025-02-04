@@ -186,60 +186,62 @@ def main():
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
+        
+        # User input fields
         location_input = st.text_input("Enter a location:", "Boston")
         radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
         category_id = business_selection()
-
-        if location_input:
-            location = geocode_location(location_input)
-            if location:
-                coordinates = [location.latitude, location.longitude]
-                st.write(f"Coordinates for {location_input}: {coordinates}")
-
-                # Fetch sensory-friendly places
-                sensory_places = get_sensory_friendly_places(
-                    f"{location.latitude},{location.longitude}", 
-                    radius=radius_input, 
-                    category_id=category_id
-                )
-                
-                if sensory_places:
-                    m = folium.Map(location=coordinates, zoom_start=15)
+        
+        if st.button("Find"):  # Button triggers API calls
+            if location_input:
+                location = geocode_location(location_input)
+                if location:
+                    coordinates = [location.latitude, location.longitude]
+                    st.session_state["location_coordinates"] = coordinates  # Store location
                     
-                    # Iterate over each place to display on the map and in the UI
-                    for place in sensory_places:
-                        name = place.get("name", "Unknown Place")
-                        address = place.get("location", {}).get("address", "Address not available")
-                        latitude = place.get("geocodes", {}).get("main", {}).get("latitude")
-                        longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
-                        photo_urls = get_place_photos(place.get("fsq_id", ""))
-                        reviews = get_place_reviews(place.get("fsq_id", ""))
-                        accessible = is_accessible(place)
-                        
-                        if latitude and longitude:
-                            popup_content = f"<b>{name}</b><br>{address}"
-                            
-                            # Add markers to the map based on accessibility
-                            folium.Marker(
-                                [latitude, longitude], 
-                                popup=popup_content, 
-                                icon=Icon(
-                                    icon="wheelchair" if accessible else "smile", 
-                                    icon_color="white", 
-                                    color="blue" if accessible else "green", 
-                                    prefix="fa"
-                                )
-                            ).add_to(m)
-                        
-                        # Display place information below the map
-                        display_place_info(name, address, photo_urls, reviews)
-                        
-                    # Render the map
-                    st_folium(m, width=800, height=500)
+                    # Fetch sensory-friendly places
+                    sensory_places = get_sensory_friendly_places(
+                        f"{location.latitude},{location.longitude}", 
+                        radius=radius_input, 
+                        category_id=category_id
+                    )
+                    
+                    st.session_state["sensory_places"] = sensory_places  # Store places
                 else:
-                    st.write("No sensory-friendly places found in the specified radius.")
-            else:
-                st.error("Unable to geocode the location. Please try again.")
+                    st.error("Unable to geocode the location. Please try again.")
+
+        # Display results if they exist in session state
+        if "sensory_places" in st.session_state and st.session_state["sensory_places"]:
+            coordinates = st.session_state.get("location_coordinates", [0, 0])
+            m = folium.Map(location=coordinates, zoom_start=15)
+            
+            for place in st.session_state["sensory_places"]:
+                name = place.get("name", "Unknown Place")
+                address = place.get("location", {}).get("address", "Address not available")
+                latitude = place.get("geocodes", {}).get("main", {}).get("latitude")
+                longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
+                photo_urls = get_place_photos(place.get("fsq_id", ""))
+                reviews = get_place_reviews(place.get("fsq_id", ""))
+                accessible = is_accessible(place)
+                
+                if latitude and longitude:
+                    popup_content = f"<b>{name}</b><br>{address}"
+                    folium.Marker(
+                        [latitude, longitude], 
+                        popup=popup_content, 
+                        icon=Icon(
+                            icon="wheelchair" if accessible else "smile", 
+                            icon_color="white", 
+                            color="blue" if accessible else "green", 
+                            prefix="fa"
+                        )
+                    ).add_to(m)
+                
+                display_place_info(name, address, photo_urls, reviews)
+            
+            st_folium(m, width=800, height=500)
+        elif "sensory_places" in st.session_state and not st.session_state["sensory_places"]:
+            st.write("No sensory-friendly places found in the specified radius.")
 
     elif page == "Learn":
         st.title("Sensory Heaven - Learn")
