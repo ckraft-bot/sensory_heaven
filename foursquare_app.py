@@ -274,10 +274,21 @@ def main():
         - sensory-friendly
         """)
 
+        footer_html = """<div style='text-align: center;'>
+            <p>Developed with :heart: by Claire Kraft</p>
+            <p>Powered by :electric_plug: Foursquare</p>
+        </div>"""
+        st.markdown(footer_html, unsafe_allow_html=True)
 
     elif page == "Contact":
         st.title("Sensory Heaven - Contact")
         contact_form()
+
+        footer_html = """<div style='text-align: center;'>
+            <p>Developed with :heart: by Claire Kraft</p>
+            <p>Powered by :electric_plug: Foursquare</p>
+        </div>"""
+        st.markdown(footer_html, unsafe_allow_html=True)
 
     elif page == "Donate":
         st.title("Sensory Heaven - Donate")
@@ -295,6 +306,11 @@ def main():
         with st.expander("CashApp"):
             st.write("Venmo link: https://cash.app/$claireykraft")
             st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
-            
+
+        footer_html = """<div style='text-align: center;'>
+            <p>Developed with :heart: by Claire Kraft</p>
+            <p>Powered by :electric_plug: Foursquare</p>
+        </div>"""
+        st.markdown(footer_html, unsafe_allow_html=True)
 if __name__ == "__main__":
     main()
