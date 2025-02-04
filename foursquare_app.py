@@ -30,6 +30,12 @@ def fetch_data(url, headers, params=None):
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
+    except requests.exceptions.HTTPError as http_err:
+        if response.status_code == 429:
+            st.error("Sorry for the inconvenience, the API limit has been reached. Please try again later.")
+        else:
+            st.error(f"HTTP error occurred: {http_err}")
+        return None
     except requests.RequestException as e:
         # debugging use only
         #st.error(f"API request failed: {e}")
@@ -122,7 +128,6 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
 
     # Debugging use only
     #st.write("API Request Parameters:", params)  
-    
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
 
