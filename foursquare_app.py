@@ -31,10 +31,14 @@ def fetch_data(url, headers, params=None):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as http_err:
-        if response.status_code == 429:
+        if response.status_code == 429: # out of credit
             st.error("Sorry for the inconvenience, the API limit has been reached. Please try again later.")
+        elif response.status_code == 401: # oauth token invalid
+            st.error("Sorry for the inconvenience. Please try again later.")
         else:
-            st.error(f"HTTP error occurred: {http_err}")
+            st.error("Sorry for the inconvenience. Please try again later.")
+            # for debugging
+            #st.error(f"HTTP error occurred: {http_err}")
         return None
     except requests.RequestException as e:
         # debugging use only
