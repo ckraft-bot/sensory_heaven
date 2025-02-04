@@ -244,6 +244,12 @@ def main():
         elif "sensory_places" in st.session_state and not st.session_state["sensory_places"]:
             st.write("No sensory-friendly places found in the specified radius.")
 
+        footer_html = """<div style='text-align: center;'>
+            <p>Developed with ❤️ by Claire Kraft</p>
+            <p>Powered by 🔌 Foursquare</p>
+        </div>"""
+        st.markdown(footer_html, unsafe_allow_html=True)
+
     elif page == "Learn":
         st.logo(logo_path,size='large') 
         st.title("Sensory Heaven - Learn")
@@ -316,5 +322,6 @@ def main():
             <p>Powered by 🔌 Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
+        
 if __name__ == "__main__":
     main()
