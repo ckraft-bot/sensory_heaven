@@ -263,8 +263,8 @@ def main():
         """)
 
         footer_html = """<div style='text-align: center;'>
-            <p>Developed with :heart: by Claire Kraft</p>
-            <p>Powered by :electric_plug: Foursquare</p>
+            <p>Developed with ❤️ by Claire Kraft</p>
+            <p>Powered by 🔌 Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 
@@ -273,8 +273,8 @@ def main():
         contact_form()
 
         footer_html = """<div style='text-align: center;'>
-            <p>Developed with :heart: by Claire Kraft</p>
-            <p>Powered by :electric_plug: Foursquare</p>
+            <p>Developed with ❤️ by Claire Kraft</p>
+            <p>Powered by 🔌 Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 
@@ -296,8 +296,8 @@ def main():
             st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
 
         footer_html = """<div style='text-align: center;'>
-            <p>Developed with :heart: by Claire Kraft</p>
-            <p>Powered by :electric_plug: Foursquare</p>
+            <p>Developed with ❤️ by Claire Kraft</p>
+            <p>Powered by 🔌 Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 if __name__ == "__main__":
