@@ -183,10 +183,11 @@ def contact_form():
 def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
+    logo_path = 'Media/sensory_heaven_logo.png' 
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
-        
+        st.logo(logo_path, size='large') 
         # User input fields
         location_input = st.text_input("Enter a location:", "Boston")
         radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
@@ -244,6 +245,7 @@ def main():
             st.write("No sensory-friendly places found in the specified radius.")
 
     elif page == "Learn":
+        st.logo(logo_path,size='large') 
         st.title("Sensory Heaven - Learn")
         st.write("""
         **What is sensory-friendly?**  
@@ -281,6 +283,7 @@ def main():
         st.markdown(footer_html, unsafe_allow_html=True)
 
     elif page == "Contact":
+        st.logo(logo_path, size='large') 
         st.title("Sensory Heaven - Contact")
         contact_form()
 
@@ -291,6 +294,7 @@ def main():
         st.markdown(footer_html, unsafe_allow_html=True)
 
     elif page == "Donate":
+        st.logo(logo_path, size='large') 
         st.title("Sensory Heaven - Donate")
         
         st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
