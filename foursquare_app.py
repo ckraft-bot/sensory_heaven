@@ -257,7 +257,7 @@ def main():
         **What is sensory-friendly?**  
         Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
         
-        **Call to action**  
+        **Call to action:**  
         Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
         This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
         While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
