@@ -246,7 +246,7 @@ def main():
 
         footer_html = """<div style='text-align: center;'>
             <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered by 🔌 Foursquare</p>
+            <p>Powered 🔌 by Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 
@@ -284,7 +284,7 @@ def main():
 
         footer_html = """<div style='text-align: center;'>
             <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered by 🔌 Foursquare</p>
+            <p>Powered 🔌 by Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 
@@ -295,7 +295,7 @@ def main():
 
         footer_html = """<div style='text-align: center;'>
             <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered by 🔌 Foursquare</p>
+            <p>Powered 🔌 by Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
 
@@ -319,7 +319,7 @@ def main():
 
         footer_html = """<div style='text-align: center;'>
             <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered by 🔌 Foursquare</p>
+            <p>Powered 🔌 by Foursquare</p>
         </div>"""
         st.markdown(footer_html, unsafe_allow_html=True)
         
