@@ -179,6 +179,37 @@ def contact_form():
             except Exception as e:
                 st.error(f"Failed to send your message: {e}")
 
+def donate():
+    """Streamlit donation options."""
+
+    # Creating an expander for Buy Me a Coffee
+    with st.expander("Kofi"):
+        st.markdown(
+            '<a href="https://ko-fi.com/clairekraft" target="_blank">'
+            '<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="200" alt="Buy Me a Coffee">'
+            '</a>',
+            unsafe_allow_html=True
+        )
+    
+    # Creating an expander for Venmo
+    with st.expander("Venmo"):
+        st.write("Venmo link: https://account.venmo.com/u/Claire-Kraft-4")
+        st.image('Media/venmo_qr.jpg', caption='Venmo QR code')
+
+    # Creating an expander for CashApp
+    with st.expander("CashApp"):
+        st.write("Venmo link: https://cash.app/$claireykraft")
+        st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
+
+    # Creating an expander for PayPal
+    with st.expander("PayPal"):
+        st.write("PayPal link: https://paypal.me/KraftClaire?country.x=US&locale.x=en_US")
+        #
+        st.image('Media/paypal_qr.jpeg', caption='PayPal QR code')
+
+
+
+
 def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
@@ -292,19 +323,10 @@ def main():
         st.title("Sensory Heaven - Donate")
         
         st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
-                Below I have added two options, you can choose the one that is convenient to you.
+                Below I have added a few options, you can choose the one that is convenient to you.
                 Again, I really appreciate your support!""")
 
-        # Creating an expander for Venmo
-        with st.expander("Venmo"):
-            st.write("Venmo link: https://venmo.com/code?user_id=2471244549062656744")
-            st.image('Media/venmo_qr.jpg', caption='Venmo QR code')
-
-        # Creating an expander for CashApp
-        with st.expander("CashApp"):
-            st.write("Venmo link: https://cash.app/$claireykraft")
-            st.image('Media/cashapp_qr.jpg', caption='CashApp QR code')
-
+        donate()
         footer_html = """<div style='text-align: center;'>
             <p>Developed with ❤️ by Claire Kraft</p>
             <p>Powered 🔌 by Foursquare</p>
