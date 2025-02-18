@@ -121,7 +121,8 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
     params = {
         "ll": location,
         "radius": radius,
-        "query": " OR ".join(sensory_keywords),
+        "query": "cozy",
+        #"query": " OR ".join(sensory_keywords),
         "limit": 10,
     }
     
@@ -229,7 +230,7 @@ def main():
 
         # Slider in miles (converted to meters)
         radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
-        radius_meters = radius_miles * 1609.344  # Correct multiplication
+        radius = radius_miles * 1609.344  # Correct multiplication
 
         category_id = business_selection()
         
@@ -243,7 +244,7 @@ def main():
                     # Fetch sensory-friendly places using converted meters
                     sensory_places = get_sensory_friendly_places(
                         f"{location.latitude},{location.longitude}", 
-                        radius=radius_meters, 
+                        radius=radius, 
                         category_id=category_id
                     )
                     
