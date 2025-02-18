@@ -186,7 +186,7 @@ def donate():
     with st.expander("Kofi"):
         st.markdown(
             '<a href="https://ko-fi.com/clairekraft" target="_blank">'
-            '<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="200" alt="Buy Me a Coffee">'
+            '<img src="https://miro.medium.com/v2/resize:fit:1200/1*HdRAxEVwO_27UL1e6QhUeA.png" width="100" alt="Buy Me a Coffee">'
             '</a>',
             unsafe_allow_html=True
         )
@@ -204,11 +204,15 @@ def donate():
     # Creating an expander for PayPal
     with st.expander("PayPal"):
         st.write("PayPal link: https://paypal.me/KraftClaire?country.x=US&locale.x=en_US")
-        #
         st.image('Media/paypal_qr.jpeg', caption='PayPal QR code')
 
 
-
+def credit():
+    footer_html = """<div style='text-align: center;'>
+        <p>Developed with ❤️ by Claire Kraft</p>
+        <p>Powered 🔌 by Foursquare</p>
+    </div>"""
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 def main():
     st.sidebar.title("Navigation")
@@ -218,9 +222,14 @@ def main():
     if page == "Find":
         st.title("Sensory Heaven - Find")
         st.logo(logo_path, size='large') 
+
         # User input fields
-        location_input = st.text_input("Enter a location:", "Boston")
-        radius_input = st.slider("Set the radius (meters):", 100, 5000, 1000, 100)
+        location_input = st.text_input("Enter a location:", placeholder="e.g., Boston, MA")
+
+        # Slider in miles (converted to meters)
+        radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
+        radius_meters = radius_miles * 1609.344  # Correct multiplication
+
         category_id = business_selection()
         
         if st.button("Find"):  # Button triggers API calls
@@ -230,16 +239,17 @@ def main():
                     coordinates = [location.latitude, location.longitude]
                     st.session_state["location_coordinates"] = coordinates  # Store location
                     
-                    # Fetch sensory-friendly places
+                    # Fetch sensory-friendly places using converted meters
                     sensory_places = get_sensory_friendly_places(
                         f"{location.latitude},{location.longitude}", 
-                        radius=radius_input, 
+                        radius=radius_meters, 
                         category_id=category_id
                     )
                     
                     st.session_state["sensory_places"] = sensory_places  # Store places
                 else:
                     st.error("Unable to geocode the location. Please try again.")
+
 
         # Display results if they exist in session state
         if "sensory_places" in st.session_state and st.session_state["sensory_places"]:
@@ -274,11 +284,7 @@ def main():
         elif "sensory_places" in st.session_state and not st.session_state["sensory_places"]:
             st.write("No sensory-friendly places found in the specified radius.")
 
-        footer_html = """<div style='text-align: center;'>
-            <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered 🔌 by Foursquare</p>
-        </div>"""
-        st.markdown(footer_html, unsafe_allow_html=True)
+        credit()
 
     elif page == "Learn":
         st.logo(logo_path,size='large') 
@@ -301,22 +307,14 @@ def main():
         - sensory-friendly
         """)
 
-        footer_html = """<div style='text-align: center;'>
-            <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered 🔌 by Foursquare</p>
-        </div>"""
-        st.markdown(footer_html, unsafe_allow_html=True)
+        credit()
 
     elif page == "Contact":
         st.logo(logo_path, size='large') 
         st.title("Sensory Heaven - Contact")
         contact_form()
 
-        footer_html = """<div style='text-align: center;'>
-            <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered 🔌 by Foursquare</p>
-        </div>"""
-        st.markdown(footer_html, unsafe_allow_html=True)
+        credit()
 
     elif page == "Donate":
         st.logo(logo_path, size='large') 
@@ -327,11 +325,7 @@ def main():
                 Again, I really appreciate your support!""")
 
         donate()
-        footer_html = """<div style='text-align: center;'>
-            <p>Developed with ❤️ by Claire Kraft</p>
-            <p>Powered 🔌 by Foursquare</p>
-        </div>"""
-        st.markdown(footer_html, unsafe_allow_html=True)
+        credit()
         
 if __name__ == "__main__":
     main()
