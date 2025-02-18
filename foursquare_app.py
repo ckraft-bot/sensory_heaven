@@ -22,7 +22,14 @@ FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
 def geocode_location(location_input):
     """Geocode a location using Nominatim."""
     geolocator = Nominatim(user_agent="streamlit_app")
-    return geolocator.geocode(location_input)
+    try:
+        location = geolocator.geocode(location_input)
+        if location is None:
+            st.error("Unable to geocode the location. Please try again with a different input.")
+        return location
+    except Exception as e:
+        st.error(f"An error occurred during geocoding: {e}")
+        return None
 
 def fetch_data(url, headers, params=None):
     """Fetch data from an API endpoint."""
@@ -34,11 +41,11 @@ def fetch_data(url, headers, params=None):
         if response.status_code == 429: # out of credit
             st.error("Sorry for the inconvenience, the API limit has been reached. Please try again later.")
         elif response.status_code == 401: # oauth token invalid
-            st.error("Sorry for the inconvenience. Please try again later.")
+            st.error("Sorry for the inconvenience, the oauth token is invalid. Please try again later.")
         else:
             st.error("Sorry for the inconvenience. Please try again later.")
             # for debugging
-            #st.error(f"HTTP error occurred: {http_err}")
+            # st.error(f"HTTP error occurred: {http_err}")
         return None
     except requests.RequestException as e:
         st.error(f"API request failed: {e}")
