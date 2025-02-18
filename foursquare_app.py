@@ -5,7 +5,6 @@ from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 import os
 import requests
-from requests.auth import HTTPBasicAuth
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -18,22 +17,12 @@ from config import (
     FOURSQUARE_CATEGORIES
 )
 FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
-FOURSQUARE_OAUTH_CLIENT_ID = os.getenv('FOURSQUARE_OAUTH_CLIENT_ID')
-FOURSQUARE_OAUTH_CLIENT_SECRET = os.getenv('FOURSQUARE_OAUTH_CLIENT_SECRET')
-FOURSQUARE_OAUTH_PUSH_SECRET = os.getenv('FOURSQUARE_OAUTH_PUSH_SECRET')
 
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Nominatim."""
     geolocator = Nominatim(user_agent="streamlit_app")
-    try:
-        location = geolocator.geocode(location_input)
-        if location is None:
-            st.error("Unable to geocode the location. Please try again with a different input.")
-        return location
-    except Exception as e:
-        st.error(f"An error occurred during geocoding: {e}")
-        return None
+    return geolocator.geocode(location_input)
 
 def fetch_data(url, headers, params=None):
     """Fetch data from an API endpoint."""
@@ -47,7 +36,7 @@ def fetch_data(url, headers, params=None):
         elif response.status_code == 401: # oauth token invalid
             st.error("Sorry for the inconvenience, the oauth token is invalid. Please try again later.")
         else:
-            # st.error("Sorry for the inconvenience. Please try again later.")
+            st.error("Sorry for the inconvenience. Please try again later.")
             # for debugging
             st.error(f"HTTP error occurred: {http_err}")
         return None
@@ -241,7 +230,6 @@ def main():
         # Slider in miles (converted to meters)
         radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
         radius_meters = radius_miles * 1609.344  # Correct multiplication
-        print(type(radius_meters))
 
         category_id = business_selection()
         
