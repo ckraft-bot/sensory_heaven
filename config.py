@@ -1,5 +1,6 @@
 #-------------------------------------------------- Foursquare --------------------------------------------------#
-FOURSQUARE_API_URL_SEARCH = "https://api.foursquare.com/v3/places/{fsq_id}"
+FOURSQUARE_API_URL_SEARCH = "https://api.foursquare.com/v3/places/search"
+
 FOURSQUARE_API_URL_PHOTOS = "https://api.foursquare.com/v3/places/{fsq_id}/photos"
 FOURSQUARE_API_URL_REVIEWS = "https://api.foursquare.com/v3/places/{fsq_id}/tips"
 
