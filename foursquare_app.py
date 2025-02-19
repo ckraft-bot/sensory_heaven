@@ -41,8 +41,8 @@ def fetch_data(url, headers, params=None):
             st.error(f"HTTP error occurred: {http_err}")
         return None
     except requests.RequestException as e:
-        # debugging use only
-        #st.error(f"API request failed: {e}")
+        # for debugging
+        st.error(f"API request failed: {e}")
         return None
 
 def business_selection():
@@ -131,8 +131,8 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
             category_id = ",".join(map(str, category_id))
         params["categories"] = category_id  # Use correct parameter name
 
-    # Debugging use only
-    #st.write("API Request Parameters:", params)  
+    # for debugging
+    st.write("API Request Parameters:", params)  
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
 
