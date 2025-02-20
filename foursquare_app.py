@@ -11,9 +11,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import config
 from config import (
+    FOURSQUARE_API_URL_PLACES,
+    FOURSQUARE_API_URL_DETAILS,
     FOURSQUARE_API_URL_PHOTOS,
     FOURSQUARE_API_URL_REVIEWS,
-    FOURSQUARE_API_URL_SEARCH,
     FOURSQUARE_CATEGORIES,
     sensory_keywords
 )
@@ -109,19 +110,43 @@ def get_place_reviews(place_id):
         for tip in data
     ] if data else []
 
-def get_sensory_friendly_places(location, radius=1000, category_id=None):
+# def get_sensory_friendly_places(location, radius=None, category_id=None):
+#     """Fetch sensory-friendly places using Foursquare API."""
+#     headers = {
+#         "Accept": "application/json",
+#         "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+#         #"Authorization": FOURSQUARE_API_KEY
+#     }
+
+#     params = {
+#         "ll": location,
+#         "radius": radius,
+#         #"query": "",
+#         #"query": " OR ".join(sensory_keywords),
+#         "limit": 10,
+#     }
+    
+#     if category_id:
+#         if isinstance(category_id, list):  # Ensure correct format
+#             category_id = ",".join(map(str, category_id))
+#         params["categories"] = category_id  # Use correct parameter name
+
+#     # for debugging
+#     st.write("API Request Parameters:", params)  
+#     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
+#     return data.get("results", []) if data else []
+
+# for debugging
+def get_sensory_friendly_places(location, radius=None, category_id=None):
     """Fetch sensory-friendly places using Foursquare API."""
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
-        #"Authorization": FOURSQUARE_API_KEY
     }
 
     params = {
         "ll": location,
         "radius": radius,
-        #"query": "",
-        #"query": " OR ".join(sensory_keywords),
         "limit": 10,
     }
     
@@ -130,8 +155,12 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
             category_id = ",".join(map(str, category_id))
         params["categories"] = category_id  # Use correct parameter name
 
-    # for debugging
-    st.write("API Request Parameters:", params)  
+    # Debugging: Print API Request Parameters and the full URL
+    st.write("API Request Parameters:", params)
+    prepared_request = requests.Request("GET", FOURSQUARE_API_URL_SEARCH, params=params).prepare()
+    full_url = prepared_request.url
+    st.write("Request URL:", full_url)
+
     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
     return data.get("results", []) if data else []
 
@@ -228,7 +257,8 @@ def main():
 
         # Slider in miles (converted to meters)
         radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
-        radius = radius_miles * 1609.344  # Correct multiplication
+        radius = radius_miles * 1609  # rounding to whole number for api call
+        st.write(f"Radius: {type(radius)}")
 
         category_id = business_selection()
         
