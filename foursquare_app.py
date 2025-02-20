@@ -14,7 +14,8 @@ from config import (
     FOURSQUARE_API_URL_PHOTOS,
     FOURSQUARE_API_URL_REVIEWS,
     FOURSQUARE_API_URL_SEARCH,
-    FOURSQUARE_CATEGORIES
+    FOURSQUARE_CATEGORIES,
+    sensory_keywords
 )
 FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
 
@@ -54,35 +55,42 @@ def business_selection():
     st.write(f"You selected: **{selected_category}**")
     return FOURSQUARE_CATEGORIES[selected_category]
 
-def is_accessible(place):
-    """Check if a place has accessibility-related keywords."""
-    # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
-    accessibility_keywords = [
-        "wheelchair",
-        "accessible",
-        # "wheelchair accessible entrance", # too specific, getting filtered out
-        # "wheelchair accessible restroom", # too specific, getting filtered out 
-        # "wheelchair accessible seating", # too specific, getting filtered out
-        # "wheelchair accessible parking", # too specific, getting filtered out
-        # "wheelchair-accessible elevator" # too specific, getting filtered out
-        "elevator",
-        "ramp"
-    ]
-    # Combine relevant fields to search for keywords
-    place_info = (
-        place.get("description", "") + 
-        " ".join([review["text"] for review in get_place_reviews(place.get("fsq_id", ""))])
-    ).lower()
+# accessiblility through keyword search in reviews and descriptions
+# def is_accessible(place):
+#     """Check if a place has accessibility-related keywords."""
+#     # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
+#     accessibility_keywords = [
+#         "wheelchair",
+#         "accessible",
+#         # "wheelchair accessible entrance", # too specific, getting filtered out
+#         # "wheelchair accessible restroom", # too specific, getting filtered out 
+#         # "wheelchair accessible seating", # too specific, getting filtered out
+#         # "wheelchair accessible parking", # too specific, getting filtered out
+#         # "wheelchair-accessible elevator" # too specific, getting filtered out
+#         "elevator",
+#         "ramp"
+#     ]
+#     # Combine relevant fields to search for keywords
+#     place_info = (
+#         place.get("description", "") + 
+#         " ".join([review["text"] for review in get_place_reviews(place.get("fsq_id", ""))])
+#     ).lower()
 
-    # Check for any accessibility keyword
-    return any(keyword in place_info for keyword in accessibility_keywords)
+#     # Check for any accessibility keyword
+#     return any(keyword in place_info for keyword in accessibility_keywords)
+
+def is_accessible(place):
+    """Check if a place is ADA compliant."""
+    return place.get("wheelchair_accessible", False)
 
 def get_place_photos(place_id):
     """Fetch photos for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
-    }
+        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        #"Authorization": FOURSQUARE_API_KEY
+}
+
     url = FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id)
     data = fetch_data(url, headers)
     return [photo["prefix"] + "300x300" + photo["suffix"] for photo in data] if data else []
@@ -91,7 +99,8 @@ def get_place_reviews(place_id):
     """Fetch reviews for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
+        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        #"Authorization": FOURSQUARE_API_KEY
     }
     url = FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id)
     data = fetch_data(url, headers)
@@ -104,24 +113,14 @@ def get_sensory_friendly_places(location, radius=1000, category_id=None):
     """Fetch sensory-friendly places using Foursquare API."""
     headers = {
         "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
+        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        #"Authorization": FOURSQUARE_API_KEY
     }
-    sensory_keywords = [
-        "ambiance",
-        "autism",
-        "booth",
-        "cozy",
-        "dim", 
-        "low-lighting",
-        "peaceful", 
-        "quiet", 
-        "sensory"
-        # "sensory-friendly" # pulled in reviews where customer service was friendly
-    ]
+
     params = {
         "ll": location,
         "radius": radius,
-        "query": "cozy",
+        #"query": "",
         #"query": " OR ".join(sensory_keywords),
         "limit": 10,
     }
@@ -184,7 +183,7 @@ def contact_form():
 def donate():
     """Streamlit donation options."""
 
-    # Creating an expander for Buy Me a Coffee
+    # Creating an expander for Kofi
     with st.expander("Kofi"):
         st.markdown(
             '<a href="https://ko-fi.com/clairekraft" target="_blank">'
@@ -207,7 +206,6 @@ def donate():
     with st.expander("PayPal"):
         st.write("PayPal link: https://paypal.me/KraftClaire?country.x=US&locale.x=en_US")
         st.image('Media/paypal_qr.jpeg', caption='PayPal QR code')
-
 
 def credit():
     footer_html = """<div style='text-align: center;'>
