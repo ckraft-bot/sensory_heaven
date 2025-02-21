@@ -56,7 +56,8 @@ def get_sensory_friendly_places(latitude, longitude, radius=None, category_id=No
         
     if category_id:
         params["categories"] = category_id  # Pass the category id as a query parameter
-    
+
+    # for debugging
     # st.write("API request parameters:", params)
     data = fetch_data(url, headers, params)
     
