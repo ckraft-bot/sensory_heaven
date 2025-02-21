@@ -20,149 +20,112 @@ from config import (
 )
 FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
 
+#-------------------------------------------------- Geocoding --------------------------------------------------#
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Nominatim."""
     geolocator = Nominatim(user_agent="streamlit_app")
     return geolocator.geocode(location_input)
 
+#-------------------------------------------------- Foursquare API Calls --------------------------------------------------#
 def fetch_data(url, headers, params=None):
-    """Fetch data from an API endpoint."""
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.HTTPError as http_err:
-        if response.status_code == 429: # out of credit
-            st.error("Sorry for the inconvenience, the API limit has been reached. Please try again later.")
-        elif response.status_code == 401: # oauth token invalid
-            st.error("Sorry for the inconvenience, the oauth token is invalid. Please try again later.")
-        else:
-            st.error("Sorry for the inconvenience. Please try again later.")
-            # for debugging
-            st.error(f"HTTP error occurred: {http_err}")
-        return None
-    except requests.RequestException as e:
-        # for debugging
-        st.error(f"API request failed: {e}")
-        return None
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    
+    if isinstance(data, list):
+        pass
+        # Optionally, you can print out the first item or loop through the list
+        #st.write(data[0])  # Show the first element of the list
+    
+    elif isinstance(data, dict):
+        return data
+    return data
 
-def business_selection():
-    """Take in user input on prefered business."""
-    selected_category = st.selectbox(
-        "Select the business category you are interested in:",
-        list(FOURSQUARE_CATEGORIES.keys()), index=0
-    )
-    st.write(f"You selected: **{selected_category}**")
-    return FOURSQUARE_CATEGORIES[selected_category]
 
-# accessiblility through keyword search in reviews and descriptions
-# def is_accessible(place):
-#     """Check if a place has accessibility-related keywords."""
-#     # What’s new in Google accessibility: https://www.youtube.com/playlist?list=PL590L5WQmH8ce6ZPBbh0v1XVptLJXmQ0K
-#     accessibility_keywords = [
-#         "wheelchair",
-#         "accessible",
-#         # "wheelchair accessible entrance", # too specific, getting filtered out
-#         # "wheelchair accessible restroom", # too specific, getting filtered out 
-#         # "wheelchair accessible seating", # too specific, getting filtered out
-#         # "wheelchair accessible parking", # too specific, getting filtered out
-#         # "wheelchair-accessible elevator" # too specific, getting filtered out
-#         "elevator",
-#         "ramp"
-#     ]
-#     # Combine relevant fields to search for keywords
-#     place_info = (
-#         place.get("description", "") + 
-#         " ".join([review["text"] for review in get_place_reviews(place.get("fsq_id", ""))])
-#     ).lower()
+def get_sensory_friendly_places(latitude, longitude, radius=None, categories=None):
+    """Fetch sensory-friendly places from Foursquare based on user preferences."""
+    url = "https://api.foursquare.com/v3/places/search"
+    headers = {"Authorization": FOURSQUARE_API_KEY}
+    
+    params = {
+        "ll": f"{latitude},{longitude}",
+        "limit": 10  # Adjust as needed
+    }
+    
+    if radius:
+        params["radius"] = radius
+    
+    # Convert selected category names to Foursquare category IDs
+    if categories:
+        category_ids = ",".join(FOURSQUARE_CATEGORIES[cat] for cat in categories if cat in FOURSQUARE_CATEGORIES)
+        if category_ids:
+            params["categories"] = category_ids  # This is the correct way to filter by category
+    
+    # Debugging output to check the request
+    #st.write("Fetching places with:", params)
 
-#     # Check for any accessibility keyword
-#     return any(keyword in place_info for keyword in accessibility_keywords)
+    data = fetch_data(url, headers, params)
+    if not data or "results" not in data:
+        st.error("No results returned from API.")
+        return []
+
+    return data.get("results", [])
+
 
 def is_accessible(place):
-    """Check if a place is ADA compliant."""
-    return place.get("wheelchair_accessible", False)
+    # Example check: Make sure that 'accessible' or a similar attribute is present in the place data
+    # This is a placeholder for whatever condition you need for accessibility
+    if 'accessible' in place and place['accessible'] == True:
+        return True
+    else:
+        return False
+
+
+def get_place_details(place_id):
+    """Fetch details for a specific place."""
+    headers = {
+        "Accept": "application/json",
+        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        "Authorization": FOURSQUARE_API_KEY
+    }
+
+    url = FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id)
+    # st.write("Request URL:", url)
+    data = fetch_data(url, headers)
+    return data
+
 
 def get_place_photos(place_id):
     """Fetch photos for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
-        #"Authorization": FOURSQUARE_API_KEY
-}
-
+        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        "Authorization": FOURSQUARE_API_KEY
+    }
+    
     url = FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id)
+    # st.write("Request URL:", url)
     data = fetch_data(url, headers)
+    # Assuming the photo structure is consistent, you can construct the image URL:
     return [photo["prefix"] + "300x300" + photo["suffix"] for photo in data] if data else []
+
 
 def get_place_reviews(place_id):
     """Fetch reviews for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
-        #"Authorization": FOURSQUARE_API_KEY
+        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
+        "Authorization": FOURSQUARE_API_KEY
     }
+    
     url = FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id)
+    # st.write("Request URL:", url)
     data = fetch_data(url, headers)
     return [
         {"user": tip.get("user", {}).get("firstName", "Anonymous"), "text": tip.get("text", "")}
         for tip in data
     ] if data else []
 
-# def get_sensory_friendly_places(location, radius=None, category_id=None):
-#     """Fetch sensory-friendly places using Foursquare API."""
-#     headers = {
-#         "Accept": "application/json",
-#         "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
-#         #"Authorization": FOURSQUARE_API_KEY
-#     }
-
-#     params = {
-#         "ll": location,
-#         "radius": radius,
-#         #"query": "",
-#         #"query": " OR ".join(sensory_keywords),
-#         "limit": 10,
-#     }
-    
-#     if category_id:
-#         if isinstance(category_id, list):  # Ensure correct format
-#             category_id = ",".join(map(str, category_id))
-#         params["categories"] = category_id  # Use correct parameter name
-
-#     # for debugging
-#     st.write("API Request Parameters:", params)  
-#     data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
-#     return data.get("results", []) if data else []
-
-# for debugging
-def get_sensory_friendly_places(location, radius=None, category_id=None):
-    """Fetch sensory-friendly places using Foursquare API."""
-    headers = {
-        "Accept": "application/json",
-        "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
-    }
-
-    params = {
-        "ll": location,
-        "radius": radius,
-        "limit": 10,
-    }
-    
-    if category_id:
-        if isinstance(category_id, list):  # Ensure correct format
-            category_id = ",".join(map(str, category_id))
-        params["categories"] = category_id  # Use correct parameter name
-
-    # Debugging: Print API Request Parameters and the full URL
-    st.write("API Request Parameters:", params)
-    prepared_request = requests.Request("GET", FOURSQUARE_API_URL_SEARCH, params=params).prepare()
-    full_url = prepared_request.url
-    st.write("Request URL:", full_url)
-
-    data = fetch_data(FOURSQUARE_API_URL_SEARCH, headers, params)
-    return data.get("results", []) if data else []
 
 def display_place_info(name, address, photos, reviews):
     """Display place information including photos and reviews."""
@@ -179,6 +142,19 @@ def display_place_info(name, address, photos, reviews):
     else:
         st.write("No reviews :speech_balloon: available.")
 
+#-------------------------------------------------- No Foursquare API Calls --------------------------------------------------#
+def business_selection():
+    """Take in user input for preferred business category."""
+    selected_category = st.selectbox(
+        "Select the business category you are interested in:",
+        list(FOURSQUARE_CATEGORIES.keys()), index=0
+    )
+    st.write(f"You selected: **{selected_category}**")
+    
+    # Return the corresponding Foursquare category ID
+    return FOURSQUARE_CATEGORIES[selected_category]
+
+
 def send_email(name, sender_email, message):
     """Send the email from the contact page."""
     EMAIL_USERNAME = os.getenv('EMAIL_USERNAME')
@@ -194,6 +170,7 @@ def send_email(name, sender_email, message):
         server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         server.sendmail(sender_email, EMAIL_USERNAME, msg.as_string())
 
+
 def contact_form():
     """Streamlit contact form."""
     user_name, user_email, user_message = st.text_input("Your Name"), st.text_input("Your Email"), st.text_area("Your Message")
@@ -208,6 +185,7 @@ def contact_form():
                 st.success("Thank you! Your message has been sent.")
             except Exception as e:
                 st.error(f"Failed to send your message: {e}")
+
 
 def donate():
     """Streamlit donation options."""
@@ -236,12 +214,14 @@ def donate():
         st.write("PayPal link: https://paypal.me/KraftClaire?country.x=US&locale.x=en_US")
         st.image('Media/paypal_qr.jpeg', caption='PayPal QR code')
 
+
 def credit():
     footer_html = """<div style='text-align: center;'>
         <p>Developed with ❤️ by Claire Kraft</p>
         <p>Powered 🔌 by Foursquare</p>
     </div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
+
 
 def main():
     st.sidebar.title("Navigation")
@@ -258,24 +238,28 @@ def main():
         # Slider in miles (converted to meters)
         radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
         radius = radius_miles * 1609  # rounding to whole number for api call
-        st.write(f"Radius: {type(radius)}")
 
-        category_id = business_selection()
+        selected_category_id = business_selection()
         
         if st.button("Find"):  # Button triggers API calls
             if location_input:
                 location = geocode_location(location_input)
                 if location:
                     coordinates = [location.latitude, location.longitude]
+
+                    # for debugging
+                    #st.write(f"Location coordinates: {coordinates}")
+
                     st.session_state["location_coordinates"] = coordinates  # Store location
                     
                     # Fetch sensory-friendly places using converted meters
                     sensory_places = get_sensory_friendly_places(
-                        f"{location.latitude},{location.longitude}", 
+                        location.latitude, 
+                        location.longitude, 
                         radius=radius, 
-                        category_id=category_id
+                        categories=[selected_category_id]  # Fix here
                     )
-                    
+
                     st.session_state["sensory_places"] = sensory_places  # Store places
                 else:
                     st.error("Unable to geocode the location. Please try again.")
@@ -295,6 +279,11 @@ def main():
                 reviews = get_place_reviews(place.get("fsq_id", ""))
                 accessible = is_accessible(place)
                 
+                if accessible:
+                    st.write(f"{place['name']} is accessible.")
+                else:
+                    st.write(f"{place['name']} is not accessible.")
+
                 if latitude and longitude:
                     popup_content = f"<b>{name}</b><br>{address}"
                     folium.Marker(
