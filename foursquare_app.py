@@ -35,7 +35,7 @@ def fetch_data(url, headers, params=None):
     if isinstance(data, list):
         pass
         # Optionally, you can print out the first item or loop through the list
-        #st.write(data[0])  # Show the first element of the list
+        # st.write(data[0])  # Show the first element of the list
     
     elif isinstance(data, dict):
         return data
@@ -61,7 +61,7 @@ def get_sensory_friendly_places(latitude, longitude, radius=None, categories=Non
         if category_ids:
             params["categories"] = category_ids  # This is the correct way to filter by category
     
-    # Debugging output to check the request
+    # for debugging
     #st.write("Fetching places with:", params)
 
     data = fetch_data(url, headers, params)
@@ -73,9 +73,8 @@ def get_sensory_friendly_places(latitude, longitude, radius=None, categories=Non
 
 
 def is_accessible(place):
-    # Example check: Make sure that 'accessible' or a similar attribute is present in the place data
-    # This is a placeholder for whatever condition you need for accessibility
-    if 'accessible' in place and place['accessible'] == True:
+    """Fetch ADA compliant places from Foursquare."""
+    if 'accessible' in place and place['wheelchair_accessible'] == True:
         return True
     else:
         return False
@@ -85,11 +84,11 @@ def get_place_details(place_id):
     """Fetch details for a specific place."""
     headers = {
         "Accept": "application/json",
-        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
         "Authorization": FOURSQUARE_API_KEY
     }
 
     url = FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id)
+    # for debugging
     # st.write("Request URL:", url)
     data = fetch_data(url, headers)
     return data
@@ -99,14 +98,13 @@ def get_place_photos(place_id):
     """Fetch photos for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
         "Authorization": FOURSQUARE_API_KEY
     }
     
     url = FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id)
+    # for debugging
     # st.write("Request URL:", url)
     data = fetch_data(url, headers)
-    # Assuming the photo structure is consistent, you can construct the image URL:
     return [photo["prefix"] + "300x300" + photo["suffix"] for photo in data] if data else []
 
 
@@ -114,7 +112,6 @@ def get_place_reviews(place_id):
     """Fetch reviews for a place from Foursquare API."""
     headers = {
         "Accept": "application/json",
-        # "Authorization": f"Bearer {FOURSQUARE_API_KEY}"
         "Authorization": FOURSQUARE_API_KEY
     }
     
@@ -247,9 +244,6 @@ def main():
                 if location:
                     coordinates = [location.latitude, location.longitude]
 
-                    # for debugging
-                    #st.write(f"Location coordinates: {coordinates}")
-
                     st.session_state["location_coordinates"] = coordinates  # Store location
                     
                     # Fetch sensory-friendly places using converted meters
@@ -264,7 +258,6 @@ def main():
                 else:
                     st.error("Unable to geocode the location. Please try again.")
 
-
         # Display results if they exist in session state
         if "sensory_places" in st.session_state and st.session_state["sensory_places"]:
             coordinates = st.session_state.get("location_coordinates", [0, 0])
@@ -278,72 +271,78 @@ def main():
                 photo_urls = get_place_photos(place.get("fsq_id", ""))
                 reviews = get_place_reviews(place.get("fsq_id", ""))
                 accessible = is_accessible(place)
-                
+
+                # Set icon based on accessibility
                 if accessible:
-                    st.write(f"{place['name']} is accessible.")
+                    icon = Icon(
+                        icon="wheelchair",  # If accessible, use wheelchair icon
+                        icon_color="white",
+                        color="blue",  # Blue color if accessible
+                        prefix="fa"
+                    )
+                    
                 else:
-                    st.write(f"{place['name']} is not accessible.")
+                    icon = Icon(
+                        icon="smile",  # If not accessible, use smile icon
+                        icon_color="white",
+                        color="green",  # Green color if not accessible
+                        prefix="fa"
+                    )
+                    
 
                 if latitude and longitude:
                     popup_content = f"<b>{name}</b><br>{address}"
                     folium.Marker(
                         [latitude, longitude], 
                         popup=popup_content, 
-                        icon=Icon(
-                            icon="wheelchair" if accessible else "smile", 
-                            icon_color="white", 
-                            color="blue" if accessible else "green", 
-                            prefix="fa"
-                        )
+                        icon=icon  # Use the icon defined above
                     ).add_to(m)
-                
+
                 display_place_info(name, address, photo_urls, reviews)
-            
+
             st_folium(m, width=800, height=500)
-        elif "sensory_places" in st.session_state and not st.session_state["sensory_places"]:
-            st.write("No sensory-friendly places found in the specified radius.")
 
         credit()
 
     elif page == "Learn":
-        st.logo(logo_path,size='large') 
-        st.title("Sensory Heaven - Learn")
-        st.write("""
-        **What is sensory-friendly?**  
-        Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
-        
-        **Call to action:**  
-        Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
-        This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
-        While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
-        It is essential that people with disabilities have opportunities to enjoy public spaces, be included in the community, and feel a sense of belonging in society. 
-        
-        Currently, there is no such app on the market; this presents a prime opportunity to fill the gap. 
-        I invite you to join me in imporving this app for everyone. 
-        Look at the "Features" list below to see what features are driving the search results on the "Find" tab and offer feedback on the features (to add, or modify, or omit). 
-        You can contact me via the "Contact" tab.
-        """)
-        st.write("""
-        **Features:**  
-        If a business has these _keywords_ in either their business profile or reviews then the establishment will be flagged as sensory friendly.
-        - ambiance
-        - autism
-        - booth
-        - cozy
-        - dim
-        - low-lighting
-        - peaceful
-        - quiet
-        - sensory-friendly
-        """)
+            st.logo(logo_path,size='large') 
+            st.title("Sensory Heaven - Learn")
+            st.write("""
+            **What is sensory-friendly?**  
+            Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
+            
+            **Call to action:**  
+            Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
+            This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
+            While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
+            It is essential that people with disabilities have opportunities to enjoy public spaces, be included in the community, and feel a sense of belonging in society. 
+            
+            Currently, there is no such app on the market; this presents a prime opportunity to fill the gap. 
+            I invite you to join me in imporving this app for everyone. 
+            Look at the "Features" list below to see what features are driving the search results on the "Find" tab and offer feedback on the features (to add, or modify, or omit). 
+            You can contact me via the "Contact" tab.
+            """)
+            st.write("""
+            **Features:**  
+            If a business has these _keywords_ in either their business profile or reviews then the establishment will be flagged as sensory friendly.
+            - ambiance
+            - autism
+            - booth
+            - cozy
+            - dim
+            - low-lighting
+            - peaceful
+            - quiet
+            - sensory-friendly
+            """)
 
-        credit()
+            credit()
 
     elif page == "Contact":
         st.logo(logo_path, size='large') 
         st.title("Sensory Heaven - Contact")
-        contact_form()
 
+        contact_form()
         credit()
 
     elif page == "Donate":
@@ -356,6 +355,5 @@ def main():
 
         donate()
         credit()
-        
 if __name__ == "__main__":
     main()
