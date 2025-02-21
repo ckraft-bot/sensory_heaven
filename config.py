@@ -1,7 +1,9 @@
 #-------------------------------------------------- Foursquare --------------------------------------------------#
-FOURSQUARE_API_URL_SEARCH = "https://api.foursquare.com/v3/places/search"
-
-FOURSQUARE_API_URL_PHOTOS = "https://api.foursquare.com/v3/places/{fsq_id}/photos"
+# places api v3
+FOURSQUARE_API_URL_PLACES = "https://api.foursquare.com/v3/places/search"
+# "https://api.foursquare.com/v3/places/search?ll={latitude},{longitude}&radius={radius}&limit=10" 
+FOURSQUARE_API_URL_DETAILS = "https://api.foursquare.com/v3/places/{fsq_id}" # return details of establishment
+FOURSQUARE_API_URL_PHOTOS = "https://api.foursquare.com/v3/places/{fsq_id}/photos?limit=1&sort=NEWEST&classifications=indoor" # return 1 neweset indoor photo of establishment
 FOURSQUARE_API_URL_REVIEWS = "https://api.foursquare.com/v3/places/{fsq_id}/tips"
 
 # Foursquare category IDs: https://docs.foursquare.com/data-products/docs/categories
@@ -127,3 +129,15 @@ GOOGLE_PLACE_TYPES = [
          "zoo"
       ]
 
+sensory_keywords = [
+      "ambiance",
+      "autism",
+      "booth",
+      "cozy",
+      "dim", 
+      "low-lighting",
+      "peaceful", 
+      "quiet", 
+      "sensory",
+      # "sensory-friendly" # pulled in reviews where customer service was friendly
+   ]
