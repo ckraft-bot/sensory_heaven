@@ -30,54 +30,56 @@ def geocode_location(location_input):
 #-------------------------------------------------- Foursquare API Calls --------------------------------------------------#
 def fetch_data(url, headers, params=None):
     response = requests.get(url, headers=headers, params=params)
-    data = response.json()
-    
-    if isinstance(data, list):
-        pass
-        # Optionally, you can print out the first item or loop through the list
-        # st.write(data[0])  # Show the first element of the list
-    
-    elif isinstance(data, dict):
-        return data
+    if response.status_code != 200:
+        st.error(f"API request failed with status code {response.status_code}: {response.text}")
+        return {}
+    try:
+        data = response.json()
+    except ValueError as e:
+        st.error(f"Failed to decode JSON: {e}")
+        st.write("Response text:", response.text)
+        return {}
     return data
 
 
-def get_sensory_friendly_places(latitude, longitude, radius=None, categories=None):
-    """Fetch sensory-friendly places from Foursquare based on user preferences."""
-    url = "https://api.foursquare.com/v3/places/search"
+def get_sensory_friendly_places(latitude, longitude, radius=None, category_id=None):
+    url = "https://api.foursquare.com/v3/places/search"  # Use the search endpoint
     headers = {"Authorization": FOURSQUARE_API_KEY}
     
     params = {
         "ll": f"{latitude},{longitude}",
-        "limit": 10  # Adjust as needed
+        "limit": 10
     }
     
     if radius:
         params["radius"] = radius
+        
+    if category_id:
+        params["categories"] = category_id  # Pass the category id as a query parameter
     
-    # Convert selected category names to Foursquare category IDs
-    if categories:
-        category_ids = ",".join(FOURSQUARE_CATEGORIES[cat] for cat in categories if cat in FOURSQUARE_CATEGORIES)
-        if category_ids:
-            params["categories"] = category_ids  # This is the correct way to filter by category
-    
-    # for debugging
-    #st.write("Fetching places with:", params)
-
+    # st.write("API request parameters:", params)
     data = fetch_data(url, headers, params)
+    
     if not data or "results" not in data:
         st.error("No results returned from API.")
         return []
-
+    
     return data.get("results", [])
 
 
 def is_accessible(place):
-    """Fetch ADA compliant places from Foursquare."""
-    if 'accessible' in place and place['wheelchair_accessible'] == True:
+    """Determine if a place is ADA compliant based on Foursquare data."""
+    # Check explicit wheelchair accessibility flag
+    if place.get("amenities", {}).get("wheelchair_accessible", False):
         return True
-    else:
-        return False
+
+    # Check if any category contains accessibility-related keywords
+    accessible_keywords = ["wheelchair", "accessible", "disability"]
+    for category in place.get("categories", []):
+        if any(keyword in category["name"].lower() for keyword in accessible_keywords):
+            return True
+
+    return False
 
 
 def get_place_details(place_id):
@@ -116,6 +118,7 @@ def get_place_reviews(place_id):
     }
     
     url = FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id)
+    # for debugging
     # st.write("Request URL:", url)
     data = fetch_data(url, headers)
     return [
@@ -127,7 +130,7 @@ def get_place_reviews(place_id):
 def display_place_info(name, address, photos, reviews):
     """Display place information including photos and reviews."""
     st.subheader(name)
-    st.write(f"Address: {address}")
+    st.write(f"**Address**: {address}")
     if photos:
         st.image(photos[0], caption=name, width=300)
     else:
@@ -141,16 +144,13 @@ def display_place_info(name, address, photos, reviews):
 
 #-------------------------------------------------- No Foursquare API Calls --------------------------------------------------#
 def business_selection():
-    """Take in user input for preferred business category."""
+    """Take in user input on prefered business."""
     selected_category = st.selectbox(
         "Select the business category you are interested in:",
         list(FOURSQUARE_CATEGORIES.keys()), index=0
     )
     st.write(f"You selected: **{selected_category}**")
-    
-    # Return the corresponding Foursquare category ID
     return FOURSQUARE_CATEGORIES[selected_category]
-
 
 def send_email(name, sender_email, message):
     """Send the email from the contact page."""
@@ -236,14 +236,13 @@ def main():
         radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
         radius = radius_miles * 1609  # rounding to whole number for api call
 
-        selected_category_id = business_selection()
+        category_id = business_selection() 
         
         if st.button("Find"):  # Button triggers API calls
             if location_input:
                 location = geocode_location(location_input)
                 if location:
                     coordinates = [location.latitude, location.longitude]
-
                     st.session_state["location_coordinates"] = coordinates  # Store location
                     
                     # Fetch sensory-friendly places using converted meters
@@ -251,7 +250,7 @@ def main():
                         location.latitude, 
                         location.longitude, 
                         radius=radius, 
-                        categories=[selected_category_id]  # Fix here
+                        category_id=category_id
                     )
 
                     st.session_state["sensory_places"] = sensory_places  # Store places
@@ -275,32 +274,35 @@ def main():
                 # Set icon based on accessibility
                 if accessible:
                     icon = Icon(
-                        icon="wheelchair",  # If accessible, use wheelchair icon
+                        icon="wheelchair",  
                         icon_color="white",
-                        color="blue",  # Blue color if accessible
+                        color="blue",  
                         prefix="fa"
                     )
                     
                 else:
                     icon = Icon(
-                        icon="smile",  # If not accessible, use smile icon
+                        icon="smile",
                         icon_color="white",
-                        color="green",  # Green color if not accessible
+                        color="green", 
                         prefix="fa"
                     )
                     
-
+                tooltip_content = f"<b>{name}</b><br>{address}"
                 if latitude and longitude:
                     popup_content = f"<b>{name}</b><br>{address}"
                     folium.Marker(
                         [latitude, longitude], 
                         popup=popup_content, 
-                        icon=icon  # Use the icon defined above
+                        icon=icon,  # Use the icon defined above
+                        tooltip=tooltip_content  
                     ).add_to(m)
 
                 display_place_info(name, address, photo_urls, reviews)
 
             st_folium(m, width=800, height=500)
+        else:
+            st.write("No sensory-friendly places found. Please try again.")
 
         credit()
 

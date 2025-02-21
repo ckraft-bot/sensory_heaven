@@ -1,7 +1,6 @@
 import requests
-FOURSQUARE_API_KEY = "fsq3WjxLfw81YTLiIkIONlz1sw3NwOezY8aYySRxbjl6OXc="
 
-single_test = "https://api.foursquare.com/v3/places/search?ll=35.0457219%2C-85.3094883&radius=8045&limit=50&categories=4d4b7105d754a06374d81259"
+single_test = "https://api.foursquare.com/v3/places/search?ll=35.0457219%2C-85.3094883&radius=8045&limit=1&categories=4d4b7105d754a06374d81259"
 headers = {
     "accept": "application/json",
     "Authorization": FOURSQUARE_API_KEY
