@@ -22,6 +22,19 @@ FOURSQUARE_CATEGORIES = {
       "Airport": "4bf58dd8d48988d1ed931735"  # Travel and Transportation > Transport Hub > Airport
    }
 
+sensory_keywords = [
+      "ambiance",
+      "autism",
+      "booth",
+      "cozy",
+      "dim", 
+      "low-lighting",
+      "peaceful", 
+      "quiet", 
+      "sensory",
+      # "sensory-friendly" # pulled in reviews where customer service was friendly
+   ]
+
 #-------------------------------------------------- Google --------------------------------------------------#
 GOOGLE_MAPS_API_BASE_URL = "https://maps.googleapis.com/maps/api"
 GOOGLE_MAPS_API_PLACES = f"{GOOGLE_MAPS_API_BASE_URL}/geocode/json"
@@ -128,15 +141,3 @@ GOOGLE_PLACE_TYPES = [
          "zoo"
       ]
 
-sensory_keywords = [
-      "ambiance",
-      "autism",
-      "booth",
-      "cozy",
-      "dim", 
-      "low-lighting",
-      "peaceful", 
-      "quiet", 
-      "sensory",
-      # "sensory-friendly" # pulled in reviews where customer service was friendly
-   ]
