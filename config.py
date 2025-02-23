@@ -1,5 +1,3 @@
-import os
-
 # Foursquare API Base URL
 FOURSQUARE_API_BASE_URL = "https://api.foursquare.com/v3/places"
 
@@ -23,14 +21,6 @@ FOURSQUARE_CATEGORIES = {
       "Aquarium": "4fceea171983d5d06c3e9823",  # Arts and Entertainment > Aquarium
       "Airport": "4bf58dd8d48988d1ed931735"  # Travel and Transportation > Transport Hub > Airport
    }
-
-# Sensory Keywords for Filtering Reviews
-sensory_keywords = [
-   "quiet", "calm", "low lighting", "soft music",
-   "not crowded", "spacious", "gentle lighting",
-   "low noise", "comfortable seating", "sensory-friendly"
-]
-
 
 #-------------------------------------------------- Google --------------------------------------------------#
 GOOGLE_MAPS_API_BASE_URL = "https://maps.googleapis.com/maps/api"
