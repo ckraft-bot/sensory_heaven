@@ -1,176 +1,99 @@
-import streamlit as st
-import folium
-from folium import Icon
-from streamlit_folium import st_folium
-from geopy.geocoders import Nominatim
 import os
 import requests
 import smtplib
 import ssl
+import streamlit as st
+import folium
+from streamlit_folium import st_folium
+from geopy.geocoders import Nominatim
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import config
 from config import (
-    FOURSQUARE_API_URL_PLACES,
-    FOURSQUARE_API_URL_DETAILS,
-    FOURSQUARE_API_URL_PHOTOS,
-    FOURSQUARE_API_URL_REVIEWS,
+    get_foursquare_url,
+    FOURSQUARE_API_BASE_URL,
     FOURSQUARE_CATEGORIES,
     sensory_keywords
 )
-FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
 
-#-------------------------------------------------- Geocoding --------------------------------------------------#
+FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY')
+EMAIL_USERNAME = os.getenv('EMAIL_USERNAME')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
+
+# API URLs
+FOURSQUARE_API_URL_PLACES = get_foursquare_url("search")
+FOURSQUARE_API_URL_DETAILS = get_foursquare_url("{fsq_id}")
+FOURSQUARE_API_URL_PHOTOS = get_foursquare_url("{fsq_id}/photos", params="?limit=1&sort=NEWEST&classifications=indoor")
+FOURSQUARE_API_URL_REVIEWS = get_foursquare_url("{fsq_id}/tips", params="?limit=5&fields=text&sort=NEWEST")
+
+HEADERS = {"Authorization": FOURSQUARE_API_KEY}
+
+#-------------------------------------------------- Utility Functions --------------------------------------------------#
 @st.cache_data
 def geocode_location(location_input):
     """Geocode a location using Nominatim."""
     geolocator = Nominatim(user_agent="streamlit_app")
     return geolocator.geocode(location_input)
 
-#-------------------------------------------------- Foursquare API Calls --------------------------------------------------#
-def fetch_data(url, headers, params=None):
-    response = requests.get(url, headers=headers, params=params)
+def fetch_data(url, params=None):
+    """Fetch data from Foursquare API."""
+    response = requests.get(url, headers=HEADERS, params=params)
     if response.status_code != 200:
-        st.error(f"API request failed with status code {response.status_code}: {response.text}")
+        st.error(f"API request failed ({response.status_code}): {response.text}")
         return {}
     try:
-        data = response.json()
+        return response.json()
     except ValueError as e:
-        st.error(f"Failed to decode JSON: {e}")
-        st.write("Response text:", response.text)
+        st.error(f"Failed to parse JSON response: {e}")
         return {}
-    return data
 
-
+#-------------------------------------------------- Foursquare API Calls --------------------------------------------------#
 def get_sensory_friendly_places(latitude, longitude, radius=None, category_id=None):
-    url = "https://api.foursquare.com/v3/places/search"  # Use the search endpoint
-    headers = {"Authorization": FOURSQUARE_API_KEY}
-    
-    params = {
-        "ll": f"{latitude},{longitude}",
-        "limit": 10
-    }
-    
-    if radius:
-        params["radius"] = radius
-        
-    if category_id:
-        params["categories"] = category_id  # Pass the category id as a query parameter
-    
-    # st.write("API request parameters:", params)
-    data = fetch_data(url, headers, params)
-    
-    if not data or "results" not in data:
-        st.error("No results returned from API.")
-        return []
-    
-    return data.get("results", [])
-
-
-def is_accessible(place):
-    """Determine if a place is ADA compliant based on Foursquare data."""
-    # Check explicit wheelchair accessibility flag
-    if place.get("amenities", {}).get("wheelchair_accessible", False):
-        return True
-
-    # Check if any category contains accessibility-related keywords
-    accessible_keywords = ["wheelchair", "accessible", "disability"]
-    for category in place.get("categories", []):
-        if any(keyword in category["name"].lower() for keyword in accessible_keywords):
-            return True
-
-    return False
-
+    """Fetch sensory-friendly places from Foursquare API."""
+    params = {"ll": f"{latitude},{longitude}", "limit": 10, "radius": radius, "categories": category_id}
+    data = fetch_data(FOURSQUARE_API_URL_PLACES, params)
+    return data.get("results", []) if data else []
 
 def get_place_details(place_id):
-    """Fetch details for a specific place."""
-    headers = {
-        "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
-    }
-
-    url = FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id)
-    # for debugging
-    # st.write("Request URL:", url)
-    data = fetch_data(url, headers)
-    return data
-
+    return fetch_data(FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id))
 
 def get_place_photos(place_id):
-    """Fetch photos for a place from Foursquare API."""
-    headers = {
-        "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
-    }
-    
-    url = FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id)
-    # for debugging
-    # st.write("Request URL:", url)
-    data = fetch_data(url, headers)
+    data = fetch_data(FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id))
     return [photo["prefix"] + "300x300" + photo["suffix"] for photo in data] if data else []
 
-
 def get_place_reviews(place_id):
-    """Fetch reviews for a place from Foursquare API."""
-    headers = {
-        "Accept": "application/json",
-        "Authorization": FOURSQUARE_API_KEY
-    }
-    
-    url = FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id)
-    # for debugging
-    # st.write("Request URL:", url)
-    data = fetch_data(url, headers)
-    return [
-        {"user": tip.get("user", {}).get("firstName", "Anonymous"), "text": tip.get("text", "")}
-        for tip in data
-    ] if data else []
+    data = fetch_data(FOURSQUARE_API_URL_REVIEWS.format(fsq_id=place_id))
+    return [{"user": tip.get("user", {}).get("firstName", "Anonymous"), "text": tip.get("text", "")} for tip in data] if data else []
 
-
+#-------------------------------------------------- UI & Display Functions --------------------------------------------------#
 def display_place_info(name, address, photos, reviews):
-    """Display place information including photos and reviews."""
+    """Display place information in Streamlit."""
     st.subheader(name)
-    st.write(f"**Address**: {address}")
+    st.write(f"**Address**: {address or 'N/A'}")
+    
     if photos:
         st.image(photos[0], caption=name, width=300)
     else:
-        st.write("No photos :camera_with_flash: available.")
+        st.write("No photos available.")
+    
+    st.write("**Reviews:**")
     if reviews:
-        st.write("Reviews:")
         for review in reviews:
             st.write(f"- {review['user']}: {review['text']}")
     else:
-        st.write("No reviews :speech_balloon: available.")
+        st.write("No reviews available.")
 
-#-------------------------------------------------- No Foursquare API Calls --------------------------------------------------#
 def business_selection():
-    """Take in user input on prefered business."""
-    selected_category = st.selectbox(
-        "Select the business category you are interested in:",
-        list(FOURSQUARE_CATEGORIES.keys()), index=0
-    )
-    st.write(f"You selected: **{selected_category}**")
-    return FOURSQUARE_CATEGORIES[selected_category]
-
-def send_email(name, sender_email, message):
-    """Send the email from the contact page."""
-    EMAIL_USERNAME = os.getenv('EMAIL_USERNAME')
-    EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
-    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
-        raise ValueError("Email credentials not found. Ensure they are set properly.")
-    
-    msg = MIMEMultipart('alternative')
-    msg['From'], msg['To'], msg['Subject'] = sender_email, EMAIL_USERNAME, "Sensory Heaven Contact Form Submission"
-    msg.attach(MIMEText(f"<html><body><p><strong>Name:</strong> {name}</p><p><strong>Email (sender):</strong> {sender_email}</p><p><strong>Message:</strong> {message}</p></body></html>", 'html'))
-    
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
-        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-        server.sendmail(sender_email, EMAIL_USERNAME, msg.as_string())
-
+    """Dropdown to select a business category."""
+    selected_category = st.selectbox("Select a business category:", list(FOURSQUARE_CATEGORIES.keys()))
+    return FOURSQUARE_CATEGORIES.get(selected_category)
 
 def contact_form():
-    """Streamlit contact form."""
-    user_name, user_email, user_message = st.text_input("Your Name"), st.text_input("Your Email"), st.text_area("Your Message")
+    """Contact form for user messages."""
+    user_name = st.text_input("Your Name")
+    user_email = st.text_input("Your Email")
+    user_message = st.text_area("Your Message")
+
     if st.button("Submit"):
         if not all([user_name, user_email, user_message]):
             st.error("All fields are required!")
@@ -179,14 +102,63 @@ def contact_form():
         else:
             try:
                 send_email(user_name, user_email, user_message)
-                st.success("Thank you! Your message has been sent.")
+                st.success("Your message has been sent.")
             except Exception as e:
                 st.error(f"Failed to send your message: {e}")
 
+def send_email(name, sender_email, message):
+    """Send email via SMTP."""
+    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+        raise ValueError("Email credentials not found.")
+    
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = EMAIL_USERNAME
+    msg['Subject'] = "Sensory Heaven Contact Form Submission"
+    msg.attach(MIMEText(f"<html><body><p><strong>Name:</strong> {name}</p><p><strong>Email:</strong> {sender_email}</p><p><strong>Message:</strong> {message}</p></body></html>", 'html'))
+    
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
+        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        server.sendmail(sender_email, EMAIL_USERNAME, msg.as_string())
+
+def credit():
+    """Credits section."""
+    st.markdown("""<div style='text-align: center;'>
+        <p>Developed with ❤️ by Claire Kraft</p>
+        <p>Powered 🔌 by Foursquare</p>
+    </div>""", unsafe_allow_html=True)
+
+def explanation():
+    st.write("""
+    **What is sensory-friendly?**  
+    Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
+    
+    **Call to action:**  
+    Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
+    This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
+    While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
+    It is essential that people with disabilities have opportunities to enjoy public spaces, be included in the community, and feel a sense of belonging in society. 
+    
+    Currently, there is no such app on the market; this presents a prime opportunity to fill the gap. 
+    I invite you to join me in imporving this app for everyone. 
+    Look at the "Features" list below to see what features are driving the search results on the "Find" tab and offer feedback on the features (to add, or modify, or omit). 
+    You can contact me via the "Contact" tab.
+    """)
+    st.write("""
+    **Features:**  
+    If a business has these _keywords_ in either their business profile or reviews then the establishment will be flagged as sensory friendly.
+    - ambiance
+    - autism
+    - booth
+    - cozy
+    - dim
+    - low-lighting
+    - peaceful
+    - quiet
+    - sensory-friendly
+    """)
 
 def donate():
-    """Streamlit donation options."""
-
     # Creating an expander for Kofi
     with st.expander("Kofi"):
         st.markdown(
@@ -211,151 +183,55 @@ def donate():
         st.write("PayPal link: https://paypal.me/KraftClaire?country.x=US&locale.x=en_US")
         st.image('Media/paypal_qr.jpeg', caption='PayPal QR code')
 
-
-def credit():
-    footer_html = """<div style='text-align: center;'>
-        <p>Developed with ❤️ by Claire Kraft</p>
-        <p>Powered 🔌 by Foursquare</p>
-    </div>"""
-    st.markdown(footer_html, unsafe_allow_html=True)
-
-
+#-------------------------------------------------- UI --------------------------------------------------#
 def main():
+    """Main function to handle page navigation."""
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Find", "Learn", "Contact", "Donate"])
+
     logo_path = 'Media/sensory_heaven_logo.png' 
+    st.logo(logo_path, size='large') 
 
     if page == "Find":
         st.title("Sensory Heaven - Find")
         st.logo(logo_path, size='large') 
 
-        # User input fields
         location_input = st.text_input("Enter a location:", placeholder="e.g., Boston, MA")
+        radius = st.slider("Set the radius (miles):", 1, 10, 1, 1) * 1609
+        category_id = business_selection()
 
-        # Slider in miles (converted to meters)
-        radius_miles = st.slider("Set the radius (miles):", 1, 10, 1, 1)  # min, max, default, step size (1 mile increments)
-        radius = radius_miles * 1609  # rounding to whole number for api call
-
-        category_id = business_selection() 
-        
-        if st.button("Find"):  # Button triggers API calls
-            if location_input:
-                location = geocode_location(location_input)
-                if location:
-                    coordinates = [location.latitude, location.longitude]
-                    st.session_state["location_coordinates"] = coordinates  # Store location
-                    
-                    # Fetch sensory-friendly places using converted meters
-                    sensory_places = get_sensory_friendly_places(
-                        location.latitude, 
-                        location.longitude, 
-                        radius=radius, 
-                        category_id=category_id
+        if st.button("Find") and location_input:
+            location = geocode_location(location_input)
+            if location:
+                places = get_sensory_friendly_places(location.latitude, location.longitude, radius, category_id)
+                for place in places:
+                    display_place_info(
+                        place.get("name", "Unknown"),
+                        place.get("location", {}).get("address", "N/A"),
+                        get_place_photos(place.get("fsq_id", "")),
+                        get_place_reviews(place.get("fsq_id", ""))
                     )
-
-                    st.session_state["sensory_places"] = sensory_places  # Store places
-                else:
-                    st.error("Unable to geocode the location. Please try again.")
-
-        # Display results if they exist in session state
-        if "sensory_places" in st.session_state and st.session_state["sensory_places"]:
-            coordinates = st.session_state.get("location_coordinates", [0, 0])
-            m = folium.Map(location=coordinates, zoom_start=15)
-            
-            for place in st.session_state["sensory_places"]:
-                name = place.get("name", "Unknown Place")
-                address = place.get("location", {}).get("address", "Address not available")
-                latitude = place.get("geocodes", {}).get("main", {}).get("latitude")
-                longitude = place.get("geocodes", {}).get("main", {}).get("longitude")
-                photo_urls = get_place_photos(place.get("fsq_id", ""))
-                reviews = get_place_reviews(place.get("fsq_id", ""))
-                accessible = is_accessible(place)
-
-                # Set icon based on accessibility
-                if accessible:
-                    icon = Icon(
-                        icon="wheelchair",  
-                        icon_color="white",
-                        color="blue",  
-                        prefix="fa"
-                    )
-                    
-                else:
-                    icon = Icon(
-                        icon="smile",
-                        icon_color="white",
-                        color="green", 
-                        prefix="fa"
-                    )
-                    
-                tooltip_content = f"<b>{name}</b><br>{address}"
-                if latitude and longitude:
-                    popup_content = f"<b>{name}</b><br>{address}"
-                    folium.Marker(
-                        [latitude, longitude], 
-                        popup=popup_content, 
-                        icon=icon,  # Use the icon defined above
-                        tooltip=tooltip_content  
-                    ).add_to(m)
-
-                display_place_info(name, address, photo_urls, reviews)
-
-            st_folium(m, width=800, height=500)
-        else:
-            st.write("No sensory-friendly places found. Please try again.")
-
+            else:
+                st.error("Unable to geocode location.")
         credit()
 
     elif page == "Learn":
-            st.logo(logo_path,size='large') 
-            st.title("Sensory Heaven - Learn")
-            st.write("""
-            **What is sensory-friendly?**  
-            Sensory-friendly spaces are designed to accommodate individuals who experience sensory sensitivities.
-            
-            **Call to action:**  
-            Autistic individuals often report that their external environments can be overwhelming due to sensory sensitivities. 
-            This app aims to help users discover establishments that offer a more accommodating and tolerable experience. 
-            While the app is primarily designed for individuals with sensory sensitivities, it is also beneficial for wheelchair users, those with chronic illnesses, neurodivergent individuals, anyone experiencing anxiety, and loved ones of these populations. 
-            It is essential that people with disabilities have opportunities to enjoy public spaces, be included in the community, and feel a sense of belonging in society. 
-            
-            Currently, there is no such app on the market; this presents a prime opportunity to fill the gap. 
-            I invite you to join me in imporving this app for everyone. 
-            Look at the "Features" list below to see what features are driving the search results on the "Find" tab and offer feedback on the features (to add, or modify, or omit). 
-            You can contact me via the "Contact" tab.
-            """)
-            st.write("""
-            **Features:**  
-            If a business has these _keywords_ in either their business profile or reviews then the establishment will be flagged as sensory friendly.
-            - ambiance
-            - autism
-            - booth
-            - cozy
-            - dim
-            - low-lighting
-            - peaceful
-            - quiet
-            - sensory-friendly
-            """)
-
-            credit()
-
-    elif page == "Contact":
+        st.title("Sensory Heaven - Learn")
         st.logo(logo_path, size='large') 
-        st.title("Sensory Heaven - Contact")
-
-        contact_form()
+        explanation()
         credit()
 
     elif page == "Donate":
-        st.logo(logo_path, size='large') 
         st.title("Sensory Heaven - Donate")
-        
-        st.write("""Are you enjoying the app? Is it helpful? If you would like to throw in a few bucks to help me cover the ongoing costs of these API services, that would be much appreciated.
-                Below I have added a few options, you can choose the one that is convenient to you.
-                Again, I really appreciate your support!""")
-
+        st.logo(logo_path, size='large') 
         donate()
         credit()
+
+    elif page == "Contact":
+        st.title("Sensory Heaven - Contact")
+        st.logo(logo_path, size='large') 
+        contact_form()
+        credit()
+
 if __name__ == "__main__":
     main()
