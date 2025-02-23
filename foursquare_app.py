@@ -80,17 +80,20 @@ def get_sensory_friendly_places(latitude, longitude, radius=None, category_id=No
 
 def is_accessible(place):
     """Determine if the place is accessible based on keywords or attributes."""
-    
-    # Define accessibility keywords that suggest the establishment is accessible
-    accessible_keywords = [
-        "wheelchair", "accessible", "ramp", "elevator", "wide doors", "barrier-free", "ADA", "mobility"
-    ]
-    
-    # Check if any of the keywords are in the place's name, address, or reviews
     name = place.get("name", "").lower()
     address = place.get("location", {}).get("address", "").lower()
     reviews = get_place_reviews(place.get("fsq_id", ""))
     
+    # Check if the place has the wheelchair accessible attribute in amenities
+    amenities = place.get("amenities", {})
+    if amenities.get("wheelchair_accessible", False):
+        return True
+    
+    # Define accessibility keywords that suggest the establishment is accessible in the reviews
+    accessible_keywords = [
+        "wheelchair", "accessible", "ramp", "elevator", "mobility"
+    ]
+
     # Search for accessibility keywords in name, address, or reviews
     for keyword in accessible_keywords:
         if keyword.lower() in name or keyword.lower() in address:
@@ -99,13 +102,17 @@ def is_accessible(place):
             if keyword.lower() in review.get("text", "").lower():
                 return True
     
-    if place.get('wheelchair_access', False):
-        return True
-    
     return False
 
 def get_place_details(place_id):
-    return fetch_data(FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id))
+    """Fetch detailed information about a place."""
+    data = fetch_data(FOURSQUARE_API_URL_DETAILS.format(fsq_id=place_id))
+    
+    # Extract the rating and review count from the place details
+    rating = data.get("rating", None)
+    review_count = data.get("stats", {}).get("total_ratings", 0)
+    
+    return data, rating, review_count
 
 def get_place_photos(place_id):
     data = fetch_data(FOURSQUARE_API_URL_PHOTOS.format(fsq_id=place_id))
@@ -116,20 +123,22 @@ def get_place_reviews(place_id):
     return [{"user": tip.get("user", {}).get("firstName", "Anonymous"), "text": tip.get("text", "")} for tip in data] if data else []
 
 #-------------------------------------------------- UI & Display Functions --------------------------------------------------#
-def display_place_info(name, address, photos, reviews):
-    """Display place information in Streamlit."""
+def display_place_info(name, address, photo_urls, reviews):
+    """Fetch and display place information including rating and review count in Streamlit."""
     st.subheader(name)
     st.write(f"**Address**: {address or 'N/A'}")
     
-    if photos:
-        st.image(photos[0], caption=name, width=300)
+    if photo_urls:
+        st.image(photo_urls[0], caption=name, width=300)
     else:
         st.write("No photos available.")
     
-    st.write("**Reviews:**")
+    st.write("**Most Recent Reviews:**")
     if reviews:
+        # Assuming 'reviews' contains a 'rating' and 'review_count'
         for review in reviews:
             st.write(f"- {review['user']}: {review['text']}")
+            
     else:
         st.write("No reviews available.")
 
