@@ -54,11 +54,11 @@ def get_sensory_friendly_places(latitude, longitude, radius=None, category_id=No
     
     # Sensory Keywords to filter places
     sensory_keywords = [
-        "quiet", "calm", "low lighting", "soft music",
-        "not crowded", "spacious", "gentle lighting",
-        "low noise", "comfortable seating", "sensory friendly"
+        "ambiance", "autism", "booth", "calm", "cozy", "dim", "low lighting", 
+        "low noise", "not crowded", "peaceful", "quiet", "sensory-friendly", 
+        "soft music", "spacious"
     ]
-    
+
     # This step combines all the words in the 'sensory_keywords' list into one long string.
     # The 'join' function adds a space between each keyword in the list.
     # Example: "quiet calm low lighting soft ... sensory friendly"
@@ -209,12 +209,17 @@ def explanation():
     - ambiance
     - autism
     - booth
+    - calm
     - cozy
     - dim
-    - low-lighting
+    - low lighting
+    - low noise
+    - not crowded
     - peaceful
     - quiet
     - sensory-friendly
+    - soft music
+    - spacious
     """)
 
 def donate():
@@ -335,7 +340,7 @@ def main():
             # Display map with sensory-friendly places and markers
             st_folium(m, width=800, height=500)
         else:
-            st.write("No sensory-friendly places found. Please try again.")
+            pass
 
 
     elif page == "Learn":
